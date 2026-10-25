@@ -77,6 +77,11 @@ namespace Sirroh.SkillsAddon
             BlacksmithingPolish.Install(harmony);
         }
 
+        private void Update()
+        {
+            BlacksmithingPolish.Tick();
+        }
+
         private void OnDestroy()
         {
             harmony?.UnpatchSelf();

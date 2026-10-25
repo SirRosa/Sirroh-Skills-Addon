@@ -113,6 +113,10 @@ namespace Sirroh.SkillsAddon
 
         private static bool warned;
         private static bool tooltipInstalled, messageInstalled;
+        private static bool lastPolish, skillTranslated;
+        private static float nextCheck;
+        private static readonly Dictionary<ConfigEntryBase, ConfigDescription> OriginalDescriptions =
+            new Dictionary<ConfigEntryBase, ConfigDescription>();
         private static readonly Regex Forged = new Regex(@"Forged at Blacksmithing (\d+)", RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex Infused = new Regex(@"Elemental Infusion: (Fire|Frost|Lightning|Poison|Spirit)", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
@@ -160,43 +164,62 @@ namespace Sirroh.SkillsAddon
         private static bool Available() => BepInEx.Bootstrap.Chainloader.PluginInfos != null &&
             BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("org.bepinex.plugins.blacksmithingexpanded");
 
+        // Language is frequently selected after BepInEx Awake/Start.
+        // Recheck cheaply until Blacksmithing has registered its SkillManager entry.
+        internal static void Tick()
+        {
+            if (Time.unscaledTime < nextCheck) return;
+            nextCheck = Time.unscaledTime + 2f;
+            if (!Available()) return;
+            if (lastPolish != PolishEnabled || (PolishEnabled && !skillTranslated)) Apply();
+        }
+
         internal static void Apply()
         {
-            if (!Available() || !PolishEnabled) return;
+            if (!Available()) return;
             try
             {
+                bool polish = PolishEnabled;
                 var plugin = BepInEx.Bootstrap.Chainloader.PluginInfos[
                     "org.bepinex.plugins.blacksmithingexpanded"].Instance;
-                TranslateSkill(plugin.GetType());
-                TranslateConfiguration(plugin.Config);
+                if (polish) skillTranslated = TranslateSkill(plugin.GetType());
+                else skillTranslated = false;
+                bool changed = TranslateConfiguration(plugin.Config, polish);
+                lastPolish = polish;
+                if (changed) RefreshConfigurationManager();
             }
             catch (Exception ex) { WarnOnce("Tłumaczenie Blacksmithing: " + ex.Message); }
         }
 
-        private static void TranslateSkill(Type pluginType)
+        private static bool TranslateSkill(Type pluginType)
         {
             var f = AccessTools.Field(pluginType, "blacksmithSkill");
             var skill = f?.GetValue(null);
-            if (skill == null) return;
+            if (skill == null) return false;
             var t = skill.GetType();
+            bool translated = true;
             foreach (var entry in new[] { ("Name", "Kowalstwo"), ("Description",
                 "Udoskonala wytwarzane wyposażenie: zwiększa obrażenia, pancerz i wytrzymałość przedmiotów.") })
             {
                 var localizeKey = AccessTools.Field(t, entry.Item1)?.GetValue(skill);
                 if (localizeKey == null) continue;
-                AccessTools.Method(localizeKey.GetType(), "Polish",
-                    new[] { typeof(string) })?.Invoke(localizeKey, new object[] { entry.Item2 });
+                var localizer = AccessTools.Method(localizeKey.GetType(), "Polish",
+                    new[] { typeof(string) });
+                if (localizer == null) translated = false;
+                else localizer.Invoke(localizeKey, new object[] { entry.Item2 });
             }
+            return translated;
         }
 
-        private static void TranslateConfiguration(ConfigFile config)
+        private static bool TranslateConfiguration(ConfigFile config, bool polish)
         {
-            if (config == null) return;
+            if (config == null) return false;
             // UI labels are metadata only; serialized Section/Key remain 100% unchanged.
             var descProperty = typeof(ConfigEntryBase).GetProperty("Description",
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             var backing = AccessTools.Field(typeof(ConfigEntryBase), "<Description>k__BackingField");
             int matched = 0, applied = 0;
+            bool changed = false;
             foreach (var pair in config)
             {
                 var definition = pair.Key;
@@ -216,28 +239,69 @@ namespace Sirroh.SkillsAddon
                     else continue;
                 }
                 matched++;
-                var old = entry.Description;
-                if (old == null) continue;
-                var tags = old.Tags == null ? new List<object>() : new List<object>(old.Tags);
-                tags.RemoveAll(tag => tag != null && tag.GetType() == typeof(ConfigurationManagerAttributes));
-                tags.Add(new ConfigurationManagerAttributes
+                if (!OriginalDescriptions.TryGetValue(entry, out var original))
                 {
-                    DispName = translation.Name,
-                    Category = Categories.TryGetValue(definition.Section, out string translated) ?
-                        translated : definition.Section
-                });
-                var localized = new ConfigDescription(translation.Help, old.AcceptableValues, tags.ToArray());
+                    original = entry.Description;
+                    if (original == null) continue;
+                    OriginalDescriptions[entry] = original;
+                }
                 try
                 {
+                    ConfigDescription newDescription = original;
+                    if (polish)
+                    {
+                        var tags = original.Tags == null ? new List<object>() : new List<object>(original.Tags);
+                        // Override tags from other plugins without mutating their original objects.
+                        tags.RemoveAll(tag => tag != null &&
+                            tag.GetType().Name == "ConfigurationManagerAttributes");
+                        tags.Add(new ConfigurationManagerAttributes
+                        {
+                            DispName = translation.Name,
+                            Category = Categories.TryGetValue(definition.Section, out string translated) ?
+                                translated : definition.Section
+                        });
+                        newDescription = new ConfigDescription(translation.Help,
+                            original.AcceptableValues, tags.ToArray());
+                    }
+                    if (ReferenceEquals(entry.Description, newDescription) ||
+                        (polish && entry.Description?.Description == newDescription.Description &&
+                         entry.Description.Tags.Any(tag => tag?.GetType() == typeof(ConfigurationManagerAttributes))))
+                        continue;
                     var setter = descProperty?.GetSetMethod(true);
-                    if (setter != null) setter.Invoke(entry, new object[] { localized });
-                    else if (backing != null) backing.SetValue(entry, localized);
+                    if (setter != null) setter.Invoke(entry, new object[] { newDescription });
+                    else if (backing != null) backing.SetValue(entry, newDescription);
                     else { WarnOnce("Brak możliwości podmiany metadanych konfiguracji bez zmiany kluczy."); break; }
                     applied++;
+                    changed = true;
                 }
                 catch (Exception ex) { WarnOnce("Metadane konfiguracji: " + ex.Message); break; }
             }
-            Plugin.Instance.LogInfo("Blacksmithing PL: translated config fields " + applied + "/" + matched);
+            if (changed) Plugin.Instance.LogInfo("Blacksmithing PL: " +
+                (polish ? "spolszczono " : "przywrócono ") + applied + "/" + matched +
+                " opcji konfiguracji (nazwy pliku i klucze pozostają oryginalne).");
+            return changed;
+        }
+
+        private static void RefreshConfigurationManager()
+        {
+            try
+            {
+                var managerType = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => a.GetName().Name == "ConfigurationManager")?
+                    .GetType("ConfigurationManager.ConfigurationManager");
+                if (managerType == null || ChainloaderManager() == null) return;
+                var manager = ChainloaderManager().GetComponent(managerType);
+                if (manager == null) return;
+                var visible = AccessTools.Property(managerType, "DisplayingWindow")?.GetValue(manager, null);
+                if (!(visible is bool open) || !open) return;
+                AccessTools.Method(managerType, "BuildSettingList")?.Invoke(manager, null);
+            }
+            catch (Exception e) { WarnOnce("Odświeżanie konfiguracji: " + e.Message); }
+        }
+
+        private static GameObject ChainloaderManager()
+        {
+            return BepInEx.Bootstrap.Chainloader.ManagerObject;
         }
 
         private static void TranslateTooltip(ref string __result)
