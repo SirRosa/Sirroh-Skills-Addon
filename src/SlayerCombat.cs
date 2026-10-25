@@ -43,7 +43,7 @@ namespace Sirroh.SkillsAddon
             if (player == null || Plugin.SlayerType == Skills.SkillType.None) return 0f;
             if (ReferenceEquals(player, Player.m_localPlayer))
                 return Mathf.Clamp01(player.GetSkills().GetSkillLevel(Plugin.SlayerType) / 100f);
-            var zdo = player.m_nview?.GetZDO();
+            var zdo = ValheimAccess.View(player)?.GetZDO();
             return zdo == null ? 0f : Mathf.Clamp01(zdo.GetFloat(LevelZdo, 0f) / 100f);
         }
 
@@ -55,8 +55,9 @@ namespace Sirroh.SkillsAddon
             {
                 if (!ReferenceEquals(__instance, Player.m_localPlayer) || Time.time < nextSync) return;
                 nextSync = Time.time + 2f;
-                var zdo = __instance.m_nview?.GetZDO();
-                if (zdo == null || !__instance.m_nview.IsOwner()) return;
+                var view = ValheimAccess.View(__instance);
+                var zdo = view?.GetZDO();
+                if (zdo == null || !view.IsOwner()) return;
                 float level = __instance.GetSkills().GetSkillLevel(Plugin.SlayerType);
                 if (Math.Abs(lastSync - level) < 0.001f) return;
                 zdo.Set(LevelZdo, level);

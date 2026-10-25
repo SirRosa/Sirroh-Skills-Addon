@@ -59,7 +59,7 @@ jobs:
             test -n "$src"
             cp "$src" ".ci-deps/$item"
           done
-          for item in assembly_valheim.dll assembly_utils.dll UnityEngine.CoreModule.dll UnityEngine.dll UnityEngine.UI.dll UnityEngine.UIModule.dll Unity.TextMeshPro.dll; do
+          for item in assembly_valheim.dll assembly_utils.dll assembly_guiutils.dll UnityEngine.CoreModule.dll UnityEngine.dll UnityEngine.UI.dll UnityEngine.UIModule.dll Unity.TextMeshPro.dll; do
             cp "$RUNNER_TEMP/valheim/valheim_server_Data/Managed/$item" ".ci-deps/$item"
           done
       - name: Verify isolation, migration and no duplicate stat writes

@@ -96,7 +96,7 @@ namespace Sirroh.SkillsAddon
                 harmony.Patch(applyBonuses, prefix: new HarmonyMethod(
                     AccessTools.Method(typeof(BlacksmithingBridge), nameof(ProtectPreviousCraftLevel))));
                 patchInstalled = true;
-                Plugin.Instance.Info("Blacksmithing guard installed on ApplyCraftingBonuses.");
+                Plugin.Instance.LogInfo("Blacksmithing guard installed on ApplyCraftingBonuses.");
             }
             catch (Exception e)
             {
@@ -140,9 +140,9 @@ namespace Sirroh.SkillsAddon
         internal static void Report()
         {
             if (!detected)
-                Plugin.Instance.Info("Blacksmithing Expanded absent; optional integration not loaded.");
+                Plugin.Instance.LogInfo("Blacksmithing Expanded absent; optional integration not loaded.");
             else
-                Plugin.Instance.Info("Blacksmithing Expanded present: foreign stats, item clones and Blacksmithing skill retained; native eligibility API " +
+                Plugin.Instance.LogInfo("Blacksmithing Expanded present: foreign stats, item clones and Blacksmithing skill retained; native eligibility API " +
                     (eligibility != null && allowed != null ? "available" : "unavailable") +
                     "; persisted-level guard " + (patchInstalled ? "installed" : "not installed") + ".");
         }

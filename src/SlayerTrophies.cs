@@ -195,7 +195,7 @@ namespace Sirroh.SkillsAddon
 
         private static void Publish(string token)
         {
-            var view = activePlayer?.m_nview;
+            var view = ValheimAccess.View(activePlayer);
             if (view == null || !view.IsOwner() || view.GetZDO() == null) return;
             if (Points.TryGetValue(token, out var value))
                 view.GetZDO().Set(NetworkKey(token), value);
@@ -240,7 +240,7 @@ namespace Sirroh.SkillsAddon
             if (ReferenceEquals(owner, activePlayer)) Points.TryGetValue(key, out amount);
             else
             {
-                var zdo = owner.m_nview?.GetZDO();
+                var zdo = ValheimAccess.View(owner)?.GetZDO();
                 if (zdo != null) amount = zdo.GetFloat(NetworkKey(key), 0f);
             }
             float boost = Mathf.Clamp01(amount / pointsCap.Value) * damageCap.Value / 100f;
@@ -268,7 +268,7 @@ namespace Sirroh.SkillsAddon
         {
             if (attacker == null || !attacker.IsTamed()) return null;
             // Sirroh familar owner key uses player identity, not ZDO network owner.
-            var id = attacker.m_nview?.GetZDO()?.GetLong("sirroh.tresura.owner.v1", 0L) ?? 0L;
+            var id = ValheimAccess.View(attacker)?.GetZDO()?.GetLong("sirroh.tresura.owner.v1", 0L) ?? 0L;
             foreach (var player in Player.GetAllPlayers())
                 if (player != null && (id != 0L && player.GetPlayerID() == id)) return player;
             var ai = attacker.GetComponent<MonsterAI>();
@@ -277,9 +277,9 @@ namespace Sirroh.SkillsAddon
 
         private static long AttackerPeer(Character target)
         {
-            var hit = target?.m_lastHit;
+            var hit = ValheimAccess.LastHit(target);
             Character attacker = hit == null ? null : hit.GetAttacker();
-            if (attacker == null) return target?.m_nview?.GetZDO()?.GetLong(DotOwnerKey, 0L) ?? 0L;
+            if (attacker == null) return ValheimAccess.View(target)?.GetZDO()?.GetLong(DotOwnerKey, 0L) ?? 0L;
             var player = attacker as Player;
             if (player == null && tamesKill.Value) player = GetTameOwner(attacker);
             return player?.GetOwner() ?? 0L;
@@ -291,7 +291,7 @@ namespace Sirroh.SkillsAddon
             return new Context
             {
                 PeerId = AttackerPeer(target),
-                Level = (useCreatureLevel.Value ? Math.Max(1, target.m_level) : 1) +
+                Level = (useCreatureLevel.Value ? Math.Max(1, target.GetLevel()) : 1) +
                         (target.IsBoss() ? bossPoints.Value : 0)
             };
         }
@@ -303,14 +303,14 @@ namespace Sirroh.SkillsAddon
             private static void Prefix(Character __instance, HitData hit)
             {
                 if (__instance == null || hit == null || __instance.IsPlayer() ||
-                    __instance.m_nview == null || !__instance.m_nview.IsOwner() || !hit.HaveAttacker()) return;
+                    ValheimAccess.View(__instance) == null || !ValheimAccess.View(__instance).IsOwner() || !hit.HaveAttacker()) return;
                 if (hit.m_damage.m_fire + hit.m_damage.m_poison + hit.m_damage.m_spirit <= 0f) return;
                 var player = hit.GetAttacker() as Player;
                 if (player == null) return;
-                var zdo = __instance.m_nview.GetZDO();
+                var zdo = ValheimAccess.View(__instance).GetZDO();
                 if (zdo == null) return;
                 zdo.Set(DotOwnerKey, player.GetOwner());
-                zdo.Set(DotLevelKey, __instance.m_level);
+                zdo.Set(DotLevelKey, __instance.GetLevel());
             }
         }
 
@@ -318,7 +318,7 @@ namespace Sirroh.SkillsAddon
         private static class Death
         {
             [HarmonyPrefix]
-            private static void Prefix(CharacterDrop __instance) => deathContext = Capture(__instance?.m_character);
+            private static void Prefix(CharacterDrop __instance) => deathContext = Capture(__instance?.GetComponent<Character>());
             [HarmonyFinalizer]
             private static void Finalizer() => deathContext = default;
         }
@@ -329,8 +329,8 @@ namespace Sirroh.SkillsAddon
             [HarmonyPrefix]
             private static void Prefix(Ragdoll __instance, CharacterDrop characterDrop)
             {
-                var state = Capture(characterDrop?.m_character);
-                var zdo = __instance?.m_nview?.GetZDO();
+                var state = Capture(characterDrop?.GetComponent<Character>());
+                var zdo = ValheimAccess.View(__instance)?.GetZDO();
                 if (zdo != null && state.PeerId != 0)
                 {
                     zdo.Set(DotOwnerKey, state.PeerId);
@@ -345,7 +345,7 @@ namespace Sirroh.SkillsAddon
             [HarmonyPrefix]
             private static void Prefix(Ragdoll __instance)
             {
-                var zdo = __instance?.m_nview?.GetZDO();
+                var zdo = ValheimAccess.View(__instance)?.GetZDO();
                 ragdollContext = zdo == null ? default : new Context
                 {
                     PeerId = zdo.GetLong(DotOwnerKey, 0L),
@@ -403,7 +403,7 @@ namespace Sirroh.SkillsAddon
         {
             if (!enabled.Value || activePlayer == null || string.IsNullOrEmpty(trophy) || trophy.Length > 200 ||
                 points <= 0f || points > 200f || float.IsNaN(points) || float.IsInfinity(points)) return;
-            if (serverAuthoritative.Value && sender != ZRoutedRpc.instance.GetServerPeerID()) return;
+            if (serverAuthoritative.Value && sender != ValheimAccess.ServerPeerID()) return;
             Points.TryGetValue(trophy, out var old);
             float next = Mathf.Min(pointsCap.Value, old + points);
             if (next <= old) return;

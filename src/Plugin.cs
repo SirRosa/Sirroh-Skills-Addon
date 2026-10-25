@@ -28,7 +28,7 @@ namespace Sirroh.SkillsAddon
         internal static bool HasOverhaul =>
             Chainloader.PluginInfos != null && Chainloader.PluginInfos.ContainsKey(OverhaulGuid);
 
-        internal void Info(string message) => Logger.LogInfo(message);
+        internal void LogInfo(string message) => Logger.LogInfo(message);
         internal void Warning(string message) => Logger.LogWarning(message);
 
         private void Awake()
@@ -50,7 +50,7 @@ namespace Sirroh.SkillsAddon
             harmony.PatchAll(typeof(Plugin).Assembly);
             BlacksmithingBridge.Install(harmony);
             BlacksmithingBridge.Report();
-            Info("Slayer/Slayer Skills active; unified XP belongs to Sirroh Overhaul.");
+            LogInfo("Slayer/Slayer Skills active; unified XP belongs to Sirroh Overhaul.");
         }
 
         private void Start()
