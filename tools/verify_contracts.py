@@ -10,7 +10,16 @@ assert '[BepInDependency(OverhaulGuid)]' in all_code
 assert '[BepInIncompatibility("neithar.Slayer")]' in all_code
 assert '[BepInIncompatibility("neobotics.valheim_mod.slayerskills")]' in all_code
 assert 'Identifier = "neithar.Slayer"' in all_code, 'Retain previous skill ID'
+assert 'Identifier = Guid + ".zawadiaka"' in all_code
+assert 'Name = "Kolos"' in all_code and 'Name = "Zawadiaka"' in all_code
+assert 'IsBrawlerWeapon' in all_code and 'BrawlerLevel' in all_code
+assert 'else if (brawlerEnabled.Value && IsBrawlerWeapon(weapon))' in all_code
 assert 'SlayerSkills_1847__C' in all_code, 'Legacy trophy collection migration'
+assert 'sirroh.skillsaddon.headhunter.kills.v1' in all_code
+assert 'CountKill' in all_code and 'ReceiveKill' in all_code
+assert 'CharacterDeathCounter' in all_code and 'KillAwardedZdo' in all_code
+assert 'ZabójstwaNaPunkt' in all_code and 'DużeStworzeniaNaPunkt' in all_code
+assert 'FallenValkyrie,Serpent,Gjall,Morgen,Bjorn,Bjorn_sleeping,Unbjorn' in all_code
 assert 'Player.m_localPlayer.m_customData' not in all_code  # Never mutate a global player blindly
 assert '.m_customData[SaveKey]' in all_code
 assert 'NetworkKey' in all_code and 'PublishAll' in all_code

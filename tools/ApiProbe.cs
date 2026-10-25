@@ -8,7 +8,7 @@ using var assembly = AssemblyDefinition.ReadAssembly(args[0]);
 
 string[][] methodTargets =
 {
-    new[] { "Character", "Damage", "ApplyPushback", "AddStaggerDamage", "RPC_Damage" },
+    new[] { "Character", "Damage", "ApplyPushback", "AddStaggerDamage", "RPC_Damage", "OnDeath" },
     new[] { "CharacterDrop", "OnDeath", "DropItems" },
     new[] { "Ragdoll", "SaveLootList", "SpawnLoot" },
     new[] { "Player", "Start", "Save", "Update", "OnDestroy" },

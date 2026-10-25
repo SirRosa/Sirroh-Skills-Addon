@@ -1,8 +1,8 @@
 {
   "name": "SirrohSkillsAddon",
-  "version_number": "0.1.0",
+  "version_number": "0.2.0",
   "website_url": "https://github.com/SirRosa/Sirroh-Skills-Addon",
-  "description": "Pogromca, Pogromca Stworzen oraz kompatybilnosc z Blacksmithing Expanded i Sirroh Overhaul.",
+  "description": "Kolos (bron dwureczna), Zawadiaka (bron jednoreczna), Lowca Glow (trofea i zabojstwa 10/5) i kompatybilnosc z Blacksmithing Expanded.",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2351",
     "ValheimModding-Jotunn-2.30.2"
