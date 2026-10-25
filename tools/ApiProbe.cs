@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using Mono.Cecil;
 
-if (args.Length != 1 || !System.IO.File.Exists(args[0]))
+if (args.Length < 1 || !System.IO.File.Exists(args[0]))
     throw new ArgumentException("Pass path to assembly_valheim.dll");
 using var assembly = AssemblyDefinition.ReadAssembly(args[0]);
 
