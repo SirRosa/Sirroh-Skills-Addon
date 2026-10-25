@@ -20,9 +20,10 @@ namespace Sirroh.SkillsAddon
     {
         internal const string Guid = "sirroh.skills.addon";
         internal const string OverhaulGuid = "sirro.valheim.pracafizyczna";
-        internal const string Version = "0.1.0";
+        internal const string Version = "0.2.0";
         internal static Plugin Instance;
         internal static Skills.SkillType SlayerType;
+        internal static Skills.SkillType BrawlerType;
         private Harmony harmony;
 
         internal static bool HasOverhaul =>
@@ -41,9 +42,17 @@ namespace Sirroh.SkillsAddon
             {
                 // Reuse the original ID: existing Slayer level survives the migration.
                 Identifier = "neithar.Slayer",
-                Name = "Pogromca",
-                Description = "Broń dwuręczna, opór na odrzut i ogłuszenia",
+                Name = "Kolos",
+                Description = "Siła broni dwuręcznych, ogłuszenie i odporność na odrzut",
                 Icon = SkillArtwork.MakeAxe(),
+                IncreaseStep = 1f
+            });
+            BrawlerType = SkillManager.Instance.AddSkill(new SkillConfig
+            {
+                Identifier = Guid + ".zawadiaka",
+                Name = "Zawadiaka",
+                Description = "Bronie jednoręczne, większe obrażenia, ogłuszenie i odporność na odrzut",
+                Icon = SkillArtwork.MakeDagger(),
                 IncreaseStep = 1f
             });
             harmony = new Harmony(Guid);
@@ -56,7 +65,7 @@ namespace Sirroh.SkillsAddon
             }
             BlacksmithingBridge.Install(harmony);
             BlacksmithingBridge.Report();
-            LogInfo("Slayer/Slayer Skills active; unified XP belongs to Sirroh Overhaul.");
+            LogInfo("Kolos, Zawadiaka and Łowca Głów ready; XP stays in Sirroh Overhaul skill pipeline.");
         }
 
         private void Start()
@@ -78,6 +87,28 @@ namespace Sirroh.SkillsAddon
     internal static class SkillArtwork
     {
         // Self-owned flat monochrome 32px texture; no third-party icons embedded.
+
+        internal static Sprite MakeDagger()
+        {
+            const int size = 32;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            var pixels = new Color32[size * size];
+            for (int y = 0; y < size; ++y)
+            for (int x = 0; x < size; ++x)
+            {
+                bool grip = y >= 4 && y <= 14 && Math.Abs(x - 15) <= 2;
+                bool guard = y >= 13 && y <= 16 && x >= 10 && x <= 20;
+                bool blade = y > 16 && y <= 28 && Math.Abs(x - 15) <= Math.Max(1, (29 - y) / 4);
+                if (!(grip || guard || blade)) continue;
+                byte value = blade ? (byte)200 : guard ? (byte)147 : (byte)119;
+                pixels[y * size + x] = new Color32(value, value, (byte)(value - 5), 255);
+            }
+            texture.SetPixels32(pixels);
+            texture.filterMode = FilterMode.Point;
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(.5f, .5f));
+        }
+
         internal static Sprite MakeAxe()
         {
             const int size = 32;
