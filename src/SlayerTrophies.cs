@@ -502,11 +502,11 @@ namespace Sirroh.SkillsAddon
                     string detail = text.text;
                     while (detail.StartsWith("Pogromca ", StringComparison.Ordinal))
                     {
-                        int next = detail.IndexOf('\\n');
+                        int next = detail.IndexOf('\n');
                         if (next < 0) break;
                         detail = detail.Substring(next + 1);
                     }
-                    text.text = prefix + "\\n" + detail;
+                    text.text = prefix + "\n" + detail;
                 }
             }
         }
