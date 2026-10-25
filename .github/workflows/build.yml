@@ -54,7 +54,7 @@ jobs:
                       with arc.open(item) as reader,target.open('wb') as writer:
                           shutil.copyfileobj(reader,writer)
           PY
-          for item in BepInEx.dll 0Harmony.dll Jotunn.dll; do
+          for item in BepInEx.dll 0Harmony.dll Mono.Cecil.dll Jotunn.dll; do
             src=$(find "$RUNNER_TEMP/bep" "$RUNNER_TEMP/jotunn" -name "$item" -print -quit)
             test -n "$src"
             cp "$src" ".ci-deps/$item"
@@ -62,6 +62,8 @@ jobs:
           for item in assembly_valheim.dll assembly_utils.dll assembly_guiutils.dll UnityEngine.CoreModule.dll UnityEngine.dll UnityEngine.UI.dll UnityEngine.UIModule.dll Unity.TextMeshPro.dll; do
             cp "$RUNNER_TEMP/valheim/valheim_server_Data/Managed/$item" ".ci-deps/$item"
           done
+      - name: Inspect Valheim 1.0 Harmony targets
+        run: dotnet run --project tools/ApiProbe.csproj -c Release -- .ci-deps/assembly_valheim.dll
       - name: Verify isolation, migration and no duplicate stat writes
         run: python3 tools/verify_contracts.py
       - name: Compile net48 DLL
