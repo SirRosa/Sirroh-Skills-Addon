@@ -63,7 +63,7 @@ jobs:
             cp "$RUNNER_TEMP/valheim/valheim_server_Data/Managed/$item" ".ci-deps/$item"
           done
       - name: Inspect Valheim 1.0 Harmony targets
-        run: dotnet run --project tools/ApiProbe.csproj -c Release -- .ci-deps/assembly_valheim.dll
+        run: dotnet run --project tools/ApiProbe.csproj -c Release -- .ci-deps/assembly_valheim.dll .ci-deps/BepInEx.dll
       - name: Verify isolation, migration and no duplicate stat writes
         run: python3 tools/verify_contracts.py
       - name: Compile net48 DLL

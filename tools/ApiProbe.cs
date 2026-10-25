@@ -67,5 +67,19 @@ else
     }
 }
 
+
+if (args.Length > 1 && System.IO.File.Exists(args[1]))
+{
+    using var bep = AssemblyDefinition.ReadAssembly(args[1]);
+    var entryType = bep.MainModule.Types.FirstOrDefault(t => t.FullName == "BepInEx.Configuration.ConfigEntryBase");
+    if (entryType != null)
+    {
+        var getter = entryType.Properties.FirstOrDefault(p => p.Name == "Description");
+        var fields = entryType.Fields.Where(f => f.Name.Contains("Description")).Select(f => f.Name).ToArray();
+        Console.WriteLine("BEPINEX ConfigEntryBase.Description property: " + (getter != null) +
+            " | setter: " + (getter?.SetMethod != null) + " | fields: " + string.Join(",", fields));
+    }
+}
+
 if (failures > 0) throw new Exception("Valheim 1.0 runtime target drift: " + failures + " missing methods");
 Console.WriteLine("Harmony target inspection passed.");
