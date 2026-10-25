@@ -25,7 +25,7 @@ namespace Sirroh.SkillsAddon
             staggerOn = config.Bind("Pogromca", "BonusStagger", true, "Premia do obrażeń ogłuszających.");
             staggerAt100 = config.Bind("Pogromca", "StaggerAt100Percent", 50f, new ConfigDescription("Bonus stagger przy 100.", new AcceptableValueRange<float>(0, 200)));
             pushOn = config.Bind("Pogromca", "PushbackResist", true, "Odporność na odrzut podczas ataku i bloku.");
-            pushAt100 = config.Bind("Pogromca", "PushbackReductionAt100Percent", 100f, new ConfigDescription("Redukcja odrzutu na poziomie 100.", new AcceptableValueRange<float>(0, 100)));
+            pushAt100 = config.Bind("Pogromca", "PushbackReductionAt100Percent", 200f, new ConfigDescription("Redukcja odrzutu na poziomie 100.", new AcceptableValueRange<float>(0, 300)));
         }
 
         internal static bool IsSlayerWeapon(ItemDrop.ItemData weapon)

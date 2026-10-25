@@ -22,6 +22,7 @@ namespace Sirroh.SkillsAddon
         private static readonly Dictionary<string, string> DisplayToTrophy = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static ConfigEntry<bool> enabled, physical, elemental, other, useCreatureLevel, tamesKill, tamesBuff, loseOnDeath, serverAuthoritative;
         private static ConfigEntry<int> pointsCap, damageCap, bossPoints;
+        private static ConfigEntry<bool> allowCheats;
         private static ConfigEntry<float> radius;
         private static ConfigEntry<AwardMode> awardMode;
         private static Player activePlayer;
@@ -41,7 +42,7 @@ namespace Sirroh.SkillsAddon
             enabled = config.Bind("Pogromca Stworzeń", "Enabled", true, "Progres gatunków po wypadnięciu trofeum.");
             pointsCap = config.Bind("Pogromca Stworzeń", "SpeciesCap", 100,
                 new ConfigDescription("Limit punktów na każdy gatunek.", new AcceptableValueRange<int>(1, 1000)));
-            damageCap = config.Bind("Pogromca Stworzeń", "DamageAtCapPercent", 30,
+            damageCap = config.Bind("Pogromca Stworzeń", "DamageAtCapPercent", 100,
                 new ConfigDescription("Maksymalny bonus do obrażeń przeciw gatunkowi.", new AcceptableValueRange<int>(0, 200)));
             physical = config.Bind("Pogromca Stworzeń", "PhysicalDamage", true, "Premia do obrażeń fizycznych.");
             elemental = config.Bind("Pogromca Stworzeń", "ElementalDamage", false, "Premia do obrażeń ogniowych/mrozu/błyskawic.");
@@ -50,11 +51,12 @@ namespace Sirroh.SkillsAddon
             tamesKill = config.Bind("Pogromca Stworzeń", "TamedKillsCount", true, "Zalicza zabójstwa własnych oswojonych stworzeń.");
             tamesBuff = config.Bind("Pogromca Stworzeń", "TamedCreaturesGetBonus", false, "Chowańce korzystają z premii właściciela przeciw gatunkowi.");
             loseOnDeath = config.Bind("Pogromca Stworzeń", "LossOnDeath", true, "Utrata części nieutrwalonych punktów po śmierci.");
-            radius = config.Bind("Pogromca Stworzeń", "TrophyDistance", 50f,
+            allowCheats = config.Bind("Pogromca Stworzeń", "AllowCheats", false, "Sterowanie progresją gatunków poleceniami raiseskill/resetskill.");
+            radius = config.Bind("Pogromca Stworzeń", "TrophyDistance", 30f,
                 new ConfigDescription("Promień rozdziału punktów w trybie drużynowym.", new AcceptableValueRange<float>(1, 200)));
-            bossPoints = config.Bind("Pogromca Stworzeń", "BossBonusPoints", 5,
+            bossPoints = config.Bind("Pogromca Stworzeń", "BossBonusPoints", 3,
                 new ConfigDescription("Dodatkowe punkty za trofeum bossa.", new AcceptableValueRange<int>(0, 100)));
-            awardMode = config.Bind("Pogromca Stworzeń", "PointsAssignment", AwardMode.KillingBlow,
+            awardMode = config.Bind("Pogromca Stworzeń", "PointsAssignment", AwardMode.Random,
                 "Random/All/Distribute/KillingBlow. Domyślnie ostatni cios.");
             serverAuthoritative = config.Bind("Pogromca Stworzeń", "OnlyHostMayAwardPoints", false,
                 "Odrzuca nieautoryzowane klient-klient RPC z punktami. Właścicielem łupów powinien być host.");
@@ -431,6 +433,51 @@ namespace Sirroh.SkillsAddon
                 activePlayer.Message(MessageHud.MessageType.TopLeft,
                     "Pogromca: " + NormalizeLabel(Localization.instance?.Localize(trophy) ?? trophy) +
                     " " + Mathf.FloorToInt(next) + "/" + pointsCap.Value);
+        }
+
+        [HarmonyPatch(typeof(Skills), "CheatRaiseSkill")]
+        private static class SpeciesRaiseCommand
+        {
+            [HarmonyPrefix]
+            private static bool Prefix(string name, float value)
+            {
+                if (!allowCheats.Value || activePlayer == null || string.IsNullOrEmpty(name)) return true;
+                if (string.Equals(name, "all", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var token in Points.Keys.ToList()) SetPoints(token, Points[token] + value);
+                    return true; // Let Valheim raise its ordinary skills, too.
+                }
+                if (!DisplayToTrophy.TryGetValue(NormalizeLabel(name.Replace('_', ' ')), out var trophy)) return true;
+                Points.TryGetValue(trophy, out var current);
+                SetPoints(trophy, current + value);
+                return false;
+            }
+        }
+
+        [HarmonyPatch(typeof(Skills), "CheatResetSkill")]
+        private static class SpeciesResetCommand
+        {
+            [HarmonyPrefix]
+            private static bool Prefix(string name)
+            {
+                if (!allowCheats.Value || activePlayer == null || string.IsNullOrEmpty(name)) return true;
+                if (string.Equals(name, "all", StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var token in Points.Keys.ToList()) SetPoints(token, 0f);
+                    return true;
+                }
+                if (!DisplayToTrophy.TryGetValue(NormalizeLabel(name.Replace('_', ' ')), out var trophy)) return true;
+                SetPoints(trophy, 0f);
+                return false;
+            }
+        }
+
+        private static void SetPoints(string trophy, float points)
+        {
+            if (string.IsNullOrEmpty(trophy) || float.IsNaN(points) || float.IsInfinity(points)) return;
+            Points[trophy] = Mathf.Clamp(points, 0f, pointsCap.Value);
+            Publish(trophy);
+            Save();
         }
 
         [HarmonyPatch(typeof(InventoryGui), "UpdateTrophyList")]
