@@ -64,6 +64,7 @@ namespace Sirroh.SkillsAddon
                 catch (Exception e) { Warning("Disabled incompatible patch " + type.FullName + ": " + e.Message); }
             }
             BlacksmithingBridge.Install(harmony);
+            BlacksmithingPolish.Install(harmony);
             BlacksmithingBridge.Report();
             LogInfo("Kolos, Zawadiaka and Łowca Głów ready; XP stays in Sirroh Overhaul skill pipeline.");
         }
@@ -73,6 +74,7 @@ namespace Sirroh.SkillsAddon
             // Soft-load support when BE initializes after this BepInEx plugin.
             BlacksmithingBridge.Initialize(Config);
             BlacksmithingBridge.Install(harmony);
+            BlacksmithingPolish.Install(harmony);
         }
 
         private void OnGUI()
