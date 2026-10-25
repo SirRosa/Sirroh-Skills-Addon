@@ -48,8 +48,16 @@ namespace Sirroh.SkillsAddon
             });
             harmony = new Harmony(Guid);
             harmony.PatchAll(typeof(Plugin).Assembly);
+            BlacksmithingBridge.Install(harmony);
             BlacksmithingBridge.Report();
             Info("Slayer/Slayer Skills active; unified XP belongs to Sirroh Overhaul.");
+        }
+
+        private void Start()
+        {
+            // Soft-load support when BE initializes after this BepInEx plugin.
+            BlacksmithingBridge.Initialize(Config);
+            BlacksmithingBridge.Install(harmony);
         }
 
         private void OnDestroy()
