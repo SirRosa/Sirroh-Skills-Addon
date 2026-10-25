@@ -182,6 +182,15 @@ namespace Sirroh.SkillsAddon
             private static void Postfix() => BuildMap();
         }
 
+        // Original Slayer Skills rebuilt its localized trophy names after
+        // language changes. Keep this behavior or Polish trophy rows do not match.
+        [HarmonyPatch(typeof(Localization), "SetLanguage")]
+        private static class RefreshLocalizedTrophies
+        {
+            [HarmonyPostfix]
+            private static void Postfix() => BuildMap();
+        }
+
         private static void BuildMap()
         {
             CreatureToTrophy.Clear();
@@ -627,6 +636,7 @@ namespace Sirroh.SkillsAddon
             private static void Postfix(List<GameObject> ___m_trophyList)
             {
                 if (!enabled.Value || ___m_trophyList == null) return;
+                if (DisplayToTrophy.Count == 0 && ZNetScene.instance != null) BuildMap();
                 foreach (var trophy in ___m_trophyList)
                 {
                     if (trophy == null) continue;
