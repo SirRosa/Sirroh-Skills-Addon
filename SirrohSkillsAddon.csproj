@@ -18,6 +18,7 @@
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(ReferenceDir)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine"><HintPath>$(ReferenceDir)/UnityEngine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.UI"><HintPath>$(ReferenceDir)/UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(ReferenceDir)/UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.UIModule"><HintPath>$(ReferenceDir)/UnityEngine.UIModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Unity.TextMeshPro"><HintPath>$(ReferenceDir)/Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="BepInEx"><HintPath>$(ReferenceDir)/BepInEx.dll</HintPath><Private>false</Private></Reference>
