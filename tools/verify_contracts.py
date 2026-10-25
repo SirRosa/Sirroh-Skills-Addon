@@ -14,7 +14,10 @@ assert 'SlayerSkills_1847__C' in all_code, 'Legacy trophy collection migration'
 assert 'Player.m_localPlayer.m_customData' not in all_code  # Never mutate a global player blindly
 assert '.m_customData[SaveKey]' in all_code
 assert 'NetworkKey' in all_code and 'PublishAll' in all_code
+assert 'InitialNetworkPublication' in all_code
+assert 'OnlyHostMayAwardPoints' in all_code
 assert 'NativeEligible' in all_code
+assert 'ProtectPreviousCraftLevel' in all_code and 'ApplyCraftingBonuses' in src['BlacksmithingBridge.cs']
 assert 'ItemEligibilityCache' in all_code
 assert 'ApplyCraftingBonuses' not in src['SlayerCombat.cs']
 assert 'hit.m_damage.Modify' in src['SlayerCombat.cs']
@@ -24,4 +27,4 @@ assert 'RaiseSkill("Blacksmithing"' not in all_code
 assert 'CharacterDrop' in all_code and 'Ragdoll' in all_code
 manifest = json.loads(Path('manifest.json').read_text(encoding='utf-8'))
 assert manifest['name'] == 'SirrohSkillsAddon'
-print('Static contracts passed: game-owned items, migration, isolated patches, one DLL.')
+print("Static contracts passed: game-owned items, migration, isolated patches, one DLL.")

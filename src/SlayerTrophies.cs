@@ -25,6 +25,7 @@ namespace Sirroh.SkillsAddon
         private static ConfigEntry<float> radius;
         private static ConfigEntry<AwardMode> awardMode;
         private static Player activePlayer;
+        private static ZDOID publishedTo = ZDOID.None;
         private static Context deathContext, ragdollContext;
 
         private enum AwardMode { Random, All, Distribute, KillingBlow }
@@ -55,7 +56,7 @@ namespace Sirroh.SkillsAddon
                 new ConfigDescription("Dodatkowe punkty za trofeum bossa.", new AcceptableValueRange<int>(0, 100)));
             awardMode = config.Bind("Pogromca Stworzeń", "PointsAssignment", AwardMode.KillingBlow,
                 "Random/All/Distribute/KillingBlow. Domyślnie ostatni cios.");
-            serverAuthoritative = config.Bind("Pogromca Stworzeń", "OnlyHostMayAwardPoints", true,
+            serverAuthoritative = config.Bind("Pogromca Stworzeń", "OnlyHostMayAwardPoints", false,
                 "Odrzuca nieautoryzowane klient-klient RPC z punktami. Właścicielem łupów powinien być host.");
         }
 
@@ -82,6 +83,22 @@ namespace Sirroh.SkillsAddon
                     __instance.m_customData.TryGetValue(LegacySaveKey, out contents);
                 Parse(contents);
                 PublishAll();
+            }
+        }
+
+        [HarmonyPatch(typeof(Player), "Update")]
+        private static class InitialNetworkPublication
+        {
+            [HarmonyPostfix]
+            private static void Postfix(Player __instance)
+            {
+                if (!ReferenceEquals(activePlayer, __instance)) return;
+                ZDOID current = __instance.GetZDOID();
+                if (current == ZDOID.None || current == publishedTo) return;
+                var view = ValheimAccess.View(__instance);
+                if (view == null || !view.IsOwner() || view.GetZDO() == null) return;
+                PublishAll();
+                publishedTo = current;
             }
         }
 
@@ -443,6 +460,7 @@ namespace Sirroh.SkillsAddon
         internal static void Clear()
         {
             activePlayer = null;
+            publishedTo = ZDOID.None;
             Points.Clear();
             CreatureToTrophy.Clear();
             DisplayToTrophy.Clear();

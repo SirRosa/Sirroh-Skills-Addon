@@ -47,7 +47,7 @@ namespace Sirroh.SkillsAddon
                 IncreaseStep = 1f
             });
             harmony = new Harmony(Guid);
-            harmony.PatchAll(typeof(Plugin).Assembly);
+            // A failed optional Harmony target must not disable other skills.\n            foreach (var type in typeof(Plugin).Assembly.GetTypes())\n            {\n                if (!Attribute.IsDefined(type, typeof(HarmonyPatch), false)) continue;\n                try { harmony.CreateClassProcessor(type).Patch(); }\n                catch (Exception e) { Warning(\"Disabled incompatible patch \" + type.FullName + \": \" + e.Message); }\n            }
             BlacksmithingBridge.Install(harmony);
             BlacksmithingBridge.Report();
             LogInfo("Slayer/Slayer Skills active; unified XP belongs to Sirroh Overhaul.");

@@ -71,6 +71,7 @@ jobs:
           mkdir -p dist/package
           cp bin/Release/net48/SirrohSkillsAddon.dll dist/package/
           cp README.md manifest.json dist/package/
+          python3 tools/build_icon.py dist/package/icon.png
           python3 - <<'PY'
           import json,zipfile,pathlib
           m=json.loads(pathlib.Path('manifest.json').read_text())
