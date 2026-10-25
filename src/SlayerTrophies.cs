@@ -36,10 +36,6 @@ namespace Sirroh.SkillsAddon
         private static ConfigEntry<AwardMode> awardMode;
         private static Player activePlayer;
         private static ZDOID publishedTo = ZDOID.None;
-        private static readonly List<string> ProgressKeys = new List<string>();
-        private static int page;
-        private static bool progressDirty = true;
-        private static ConfigEntry<bool> showKillMessages, showInventoryProgress;
         private static Context deathContext, ragdollContext;
 
         private enum AwardMode { Random, All, Distribute, KillingBlow }
@@ -53,10 +49,6 @@ namespace Sirroh.SkillsAddon
         internal static void Configure(ConfigFile config)
         {
             enabled = config.Bind("Łowca Głów", "Enabled", true, "Progres gatunków za trofea i zabójstwa.");
-            showKillMessages = config.Bind("Łowca Głów", "PokazPostepZabojstw", true,
-                "Pokazuj postęp do następnego punktu po każdym zabójstwie.");
-            showInventoryProgress = config.Bind("Łowca Głów", "PanelPostepuWekwipunku", true,
-                "Pokazuj panel Łowcy Głów przy otwartym ekwipunku; obejmuje też stworzenia bez trofeów.");
             pointsCap = config.Bind("Łowca Głów", "SpeciesCap", 100,
                 new ConfigDescription("Limit punktów na każdy gatunek.", new AcceptableValueRange<int>(1, 1000)));
             damageCap = config.Bind("Łowca Głów", "DamageAtCapPercent", 100,
@@ -111,8 +103,7 @@ namespace Sirroh.SkillsAddon
                 activePlayer = __instance;
                 Points.Clear();
                 KillCounts.Clear();
-                progressDirty = true;
-                if (!__instance.m_customData.TryGetValue(SaveKey, out var contents))
+                    if (!__instance.m_customData.TryGetValue(SaveKey, out var contents))
                     __instance.m_customData.TryGetValue(LegacySaveKey, out contents);
                 Parse(contents);
                 if (__instance.m_customData.TryGetValue(KillSaveKey, out var killContents))
@@ -361,7 +352,6 @@ namespace Sirroh.SkillsAddon
             if (previous >= 100000000) return;
             int next = previous + 1;
             KillCounts[species] = next;
-            progressDirty = true;
             int needed = prefab.StartsWith("@boss:", StringComparison.Ordinal)
                 ? rareInterval.Value : RequiredKills(prefab);
             if (next % needed == 0)
@@ -374,12 +364,6 @@ namespace Sirroh.SkillsAddon
                         " (" + next + " zabójstw)");
             }
             else Save(); // Persist remainder across character logout/restart.
-            if (showKillMessages.Value && next % needed != 0)
-                activePlayer.Message(MessageHud.MessageType.TopLeft,
-                    "Łowca Głów: " + DisplaySpecies(species) +
-                    " — " + (next % needed) + "/" + needed + " zabójstw" +
-                    " | poziom " + Mathf.FloorToInt(Points.TryGetValue(species, out var score) ? score : 0f) +
-                    "/" + pointsCap.Value);
         }
 
         private static string DisplaySpecies(string token)
@@ -574,7 +558,6 @@ namespace Sirroh.SkillsAddon
             float next = Mathf.Min(pointsCap.Value, old + points);
             if (next <= old) return;
             Points[trophy] = next;
-            progressDirty = true;
             Save();
             Publish(trophy);
             if (Mathf.FloorToInt(next) > Mathf.FloorToInt(old))
@@ -624,7 +607,6 @@ namespace Sirroh.SkillsAddon
         {
             if (string.IsNullOrEmpty(trophy) || float.IsNaN(points) || float.IsInfinity(points)) return;
             Points[trophy] = Mathf.Clamp(points, 0f, pointsCap.Value);
-            progressDirty = true;
             Publish(trophy);
             Save();
         }
@@ -652,17 +634,19 @@ namespace Sirroh.SkillsAddon
                     Points.TryGetValue(key, out var value);
                     KillCounts.TryGetValue(key, out int kills);
                     int threshold = RequiredKillsForTrophy(key);
-                    string prefix = "Łowca Głów " + Mathf.FloorToInt(value) + "/" + pointsCap.Value +
-                        " • " + (kills % threshold) + "/" + threshold + " zabójstw";
+                    // Rank and kills remaining: e.g. 2/100 • 3/10.
+                    string prefix = Mathf.FloorToInt(value) + "/" + pointsCap.Value +
+                        " • " + (kills % threshold) + "/" + threshold;
                     string detail = text.text;
-                    while ((detail.StartsWith("Łowca Głów ", StringComparison.Ordinal) ||
-                            detail.StartsWith("Pogromca ", StringComparison.Ordinal)))
+                    while (detail.StartsWith("Łowca Głów ", StringComparison.Ordinal) ||
+                           detail.StartsWith("Pogromca ", StringComparison.Ordinal) ||
+                           System.Text.RegularExpressions.Regex.IsMatch(detail,
+                               @"^\d+/\d+\s*•\s*\d+/\d+[^\n]*(\n|$)"))
                     {
                         int next = detail.IndexOf('\n');
-                        if (next < 0) break;
-                        detail = detail.Substring(next + 1);
+                        detail = next < 0 ? "" : detail.Substring(next + 1);
                     }
-                    text.text = prefix + "\n" + detail;
+                    text.text = string.IsNullOrEmpty(detail) ? prefix : prefix + "\n" + detail;
                 }
             }
         }
@@ -675,68 +659,12 @@ namespace Sirroh.SkillsAddon
             return Math.Max(1, commonInterval.Value);
         }
 
-        internal static void DrawProgress()
-        {
-            if (!enabled.Value || !showInventoryProgress.Value ||
-                activePlayer == null || !InventoryGui.IsVisible()) return;
-            if (progressDirty)
-            {
-                ProgressKeys.Clear();
-                foreach (var key in KillCounts.Keys) ProgressKeys.Add(key);
-                foreach (var key in Points.Keys)
-                    if (!ProgressKeys.Contains(key)) ProgressKeys.Add(key);
-                ProgressKeys.Sort((a, b) =>
-                {
-                    KillCounts.TryGetValue(a, out int ac);
-                    KillCounts.TryGetValue(b, out int bc);
-                    int order = bc.CompareTo(ac);
-                    return order != 0 ? order : StringComparer.Ordinal.Compare(a, b);
-                });
-                progressDirty = false;
-            }
-            int maxPage = Math.Max(0, (ProgressKeys.Count - 1) / 7);
-            page = Mathf.Clamp(page, 0, maxPage);
-            float width = 350f;
-            var rect = new Rect(Mathf.Max(8, Screen.width - width - 14),
-                Mathf.Max(8, Screen.height - 334), width, 316);
-            GUI.Box(rect, "");
-            GUI.Label(new Rect(rect.x + 12, rect.y + 9, 320, 26), "ŁOWCA GŁÓW  •  POSTĘP");
-            if (ProgressKeys.Count == 0)
-            {
-                GUI.Label(new Rect(rect.x + 12, rect.y + 47, width - 24, 44),
-                    "Brak zapisanych zabójstw.\nPokonaj stworzenie, aby zacząć śledzenie.");
-                return;
-            }
-            for (int i = page * 7, row = 0; i < ProgressKeys.Count && row < 7; ++i, ++row)
-            {
-                string key = ProgressKeys[i];
-                Points.TryGetValue(key, out float level);
-                KillCounts.TryGetValue(key, out int total);
-                int interval = RequiredKillsForTrophy(key);
-                string title = DisplaySpecies(key);
-                if (title.Length > 22) title = title.Substring(0, 19) + "...";
-                GUI.Label(new Rect(rect.x + 12, rect.y + 42 + row * 33, width - 24, 31),
-                    title + ": " + Mathf.FloorToInt(level) + "/" + pointsCap.Value +
-                    "  |  " + (total % interval) + "/" + interval +
-                    "  (" + total + " zab.)");
-            }
-            if (maxPage > 0)
-            {
-                if (GUI.Button(new Rect(rect.x + 12, rect.y + 274, 40, 28), "<")) page = Math.Max(0, page - 1);
-                GUI.Label(new Rect(rect.x + 70, rect.y + 277, 135, 25), "Strona " + (page + 1) + "/" + (maxPage + 1));
-                if (GUI.Button(new Rect(rect.x + width - 52, rect.y + 274, 40, 28), ">")) page = Math.Min(maxPage, page + 1);
-            }
-        }
-
         internal static void Clear()
         {
             activePlayer = null;
             publishedTo = ZDOID.None;
             Points.Clear();
             KillCounts.Clear();
-            ProgressKeys.Clear();
-            progressDirty = true;
-            page = 0;
             CountedDeaths.Clear();
             CountedDeathOrder.Clear();
             CreatureToTrophy.Clear();

@@ -14,7 +14,8 @@ namespace Sirroh.SkillsAddon
     /// <summary>Polish UI for Blacksmithing Expanded 1.2.4; never renames config keys or skill IDs.</summary>
     internal static class BlacksmithingPolish
     {
-        private sealed class LabelTag
+        // ConfigurationManager requires this exact class name (not merely matching fields).
+        private sealed class ConfigurationManagerAttributes
         {
             public string DispName;
             public string Category;
@@ -218,8 +219,8 @@ namespace Sirroh.SkillsAddon
                 var old = entry.Description;
                 if (old == null) continue;
                 var tags = old.Tags == null ? new List<object>() : new List<object>(old.Tags);
-                tags.RemoveAll(tag => tag != null && tag.GetType() == typeof(LabelTag));
-                tags.Add(new LabelTag
+                tags.RemoveAll(tag => tag != null && tag.GetType() == typeof(ConfigurationManagerAttributes));
+                tags.Add(new ConfigurationManagerAttributes
                 {
                     DispName = translation.Name,
                     Category = Categories.TryGetValue(definition.Section, out string translated) ?

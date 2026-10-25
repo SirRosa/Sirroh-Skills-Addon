@@ -77,11 +77,6 @@ namespace Sirroh.SkillsAddon
             BlacksmithingPolish.Install(harmony);
         }
 
-        private void OnGUI()
-        {
-            SlayerTrophies.DrawProgress();
-        }
-
         private void OnDestroy()
         {
             harmony?.UnpatchSelf();
