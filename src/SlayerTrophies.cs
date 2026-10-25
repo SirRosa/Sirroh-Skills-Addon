@@ -14,9 +14,18 @@ namespace Sirroh.SkillsAddon
         private const string SaveKey = "sirroh.skillsaddon.slayerspecies.v1";
         // The original CustomDataWrapper persisted this exact double-underscore key.
         private const string LegacySaveKey = "SlayerSkills_1847__C";
+        private const string KillSaveKey = "sirroh.skillsaddon.headhunter.kills.v1";
+        private const string KillRpc = "sirroh.skillsaddon.headhunter.kill.v1";
+        private const string KillAwardedZdo = "sirroh.skillsaddon.headhunter.counted.v1";
         private const string AwardRpc = "sirroh.skillsaddon.slayer.award.v1";
         private const string DotOwnerKey = "sirroh.skillsaddon.slayer.dot.owner.v1";
         private const string DotLevelKey = "sirroh.skillsaddon.slayer.dot.level.v1";
+        private static readonly Dictionary<string, int> KillCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+        private static readonly HashSet<ZDOID> CountedDeaths = new HashSet<ZDOID>();
+        private static readonly Queue<ZDOID> CountedDeathOrder = new Queue<ZDOID>();
+        private static ConfigEntry<int> commonInterval, rareInterval;
+        private static ConfigEntry<string> rarePrefabs;
+        private static HashSet<string> rareExact = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, float> Points = new Dictionary<string, float>(StringComparer.Ordinal);
         private static readonly Dictionary<string, string> CreatureToTrophy = new Dictionary<string, string>(StringComparer.Ordinal);
         private static readonly Dictionary<string, string> DisplayToTrophy = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -39,26 +48,37 @@ namespace Sirroh.SkillsAddon
 
         internal static void Configure(ConfigFile config)
         {
-            enabled = config.Bind("Pogromca Stworzeń", "Enabled", true, "Progres gatunków po wypadnięciu trofeum.");
-            pointsCap = config.Bind("Pogromca Stworzeń", "SpeciesCap", 100,
+            enabled = config.Bind("Łowca Głów", "Enabled", true, "Progres gatunków po wypadnięciu trofeum.");
+            pointsCap = config.Bind("Łowca Głów", "SpeciesCap", 100,
                 new ConfigDescription("Limit punktów na każdy gatunek.", new AcceptableValueRange<int>(1, 1000)));
-            damageCap = config.Bind("Pogromca Stworzeń", "DamageAtCapPercent", 100,
+            damageCap = config.Bind("Łowca Głów", "DamageAtCapPercent", 100,
                 new ConfigDescription("Maksymalny bonus do obrażeń przeciw gatunkowi.", new AcceptableValueRange<int>(0, 200)));
-            physical = config.Bind("Pogromca Stworzeń", "PhysicalDamage", true, "Premia do obrażeń fizycznych.");
-            elemental = config.Bind("Pogromca Stworzeń", "ElementalDamage", false, "Premia do obrażeń ogniowych/mrozu/błyskawic.");
-            other = config.Bind("Pogromca Stworzeń", "OtherDamage", false, "Premia do trucizny i ducha.");
-            useCreatureLevel = config.Bind("Pogromca Stworzeń", "ScaleByStars", false, "Więcej punktów za wyższy poziom (gwiazdki CLLC).");
-            tamesKill = config.Bind("Pogromca Stworzeń", "TamedKillsCount", true, "Zalicza zabójstwa własnych oswojonych stworzeń.");
-            tamesBuff = config.Bind("Pogromca Stworzeń", "TamedCreaturesGetBonus", false, "Chowańce korzystają z premii właściciela przeciw gatunkowi.");
-            loseOnDeath = config.Bind("Pogromca Stworzeń", "LossOnDeath", true, "Utrata części nieutrwalonych punktów po śmierci.");
-            allowCheats = config.Bind("Pogromca Stworzeń", "AllowCheats", false, "Sterowanie progresją gatunków poleceniami raiseskill/resetskill.");
-            radius = config.Bind("Pogromca Stworzeń", "TrophyDistance", 30f,
+            physical = config.Bind("Łowca Głów", "PhysicalDamage", true, "Premia do obrażeń fizycznych.");
+            elemental = config.Bind("Łowca Głów", "ElementalDamage", false, "Premia do obrażeń ogniowych/mrozu/błyskawic.");
+            other = config.Bind("Łowca Głów", "OtherDamage", false, "Premia do trucizny i ducha.");
+            useCreatureLevel = config.Bind("Łowca Głów", "ScaleByStars", false, "Więcej punktów za wyższy poziom (gwiazdki CLLC).");
+            tamesKill = config.Bind("Łowca Głów", "TamedKillsCount", true, "Zalicza zabójstwa własnych oswojonych stworzeń.");
+            tamesBuff = config.Bind("Łowca Głów", "TamedCreaturesGetBonus", false, "Chowańce korzystają z premii właściciela przeciw gatunkowi.");
+            loseOnDeath = config.Bind("Łowca Głów", "LossOnDeath", true, "Utrata części nieutrwalonych punktów po śmierci.");
+            allowCheats = config.Bind("Łowca Głów", "AllowCheats", false, "Sterowanie progresją gatunków poleceniami raiseskill/resetskill.");
+            radius = config.Bind("Łowca Głów", "TrophyDistance", 30f,
                 new ConfigDescription("Promień rozdziału punktów w trybie drużynowym.", new AcceptableValueRange<float>(1, 200)));
-            bossPoints = config.Bind("Pogromca Stworzeń", "BossBonusPoints", 3,
+            bossPoints = config.Bind("Łowca Głów", "BossBonusPoints", 3,
                 new ConfigDescription("Dodatkowe punkty za trofeum bossa.", new AcceptableValueRange<int>(0, 100)));
-            awardMode = config.Bind("Pogromca Stworzeń", "PointsAssignment", AwardMode.Random,
+            awardMode = config.Bind("Łowca Głów", "PointsAssignment", AwardMode.Random,
                 "Random/All/Distribute/KillingBlow. Domyślnie ostatni cios.");
-            serverAuthoritative = config.Bind("Pogromca Stworzeń", "OnlyHostMayAwardPoints", false,
+            commonInterval = config.Bind("Łowca Głów", "ZabójstwaNaPunkt", 10,
+                new ConfigDescription("Liczba zabójstw jednego gatunku potrzebna do przyznania +1 punktu, niezależnie od trofeów.",
+                    new AcceptableValueRange<int>(1, 100)));
+            rareInterval = config.Bind("Łowca Głów", "DużeStworzeniaNaPunkt", 5,
+                new ConfigDescription("Liczba zabójstw dużego/rzadkiego gatunku potrzebna do +1 punktu.",
+                    new AcceptableValueRange<int>(1, 100)));
+            rarePrefabs = config.Bind("Łowca Głów", "DużeStworzeniaPrefaby",
+                "FallenValkyrie,Serpent,Gjall,Morgen,Bjorn,Bjorn_sleeping,Unbjorn,Troll,Abomination,StoneGolem,SeekerBrute,GoblinBrute,Lox",
+                "Lista nazw prefabów (oddzielona przecinkami); każdy ma próg 5 zamiast 10. Bossowie automatycznie korzystają z progu 5.");
+            ParseRarity(rarePrefabs.Value);
+            rarePrefabs.SettingChanged += (_, __) => ParseRarity(rarePrefabs.Value);
+            serverAuthoritative = config.Bind("Łowca Głów", "OnlyHostMayAwardPoints", false,
                 "Odrzuca nieautoryzowane klient-klient RPC z punktami. Właścicielem łupów powinien być host.");
         }
 
@@ -69,6 +89,7 @@ namespace Sirroh.SkillsAddon
             private static void Postfix()
             {
                 ZRoutedRpc.instance?.Register<string, float>(AwardRpc, ReceivePoints);
+                ZRoutedRpc.instance?.Register<string, string>(KillRpc, ReceiveKill);
             }
         }
 
@@ -81,9 +102,12 @@ namespace Sirroh.SkillsAddon
                 if (!ReferenceEquals(__instance, Player.m_localPlayer)) return;
                 activePlayer = __instance;
                 Points.Clear();
+                KillCounts.Clear();
                 if (!__instance.m_customData.TryGetValue(SaveKey, out var contents))
                     __instance.m_customData.TryGetValue(LegacySaveKey, out contents);
                 Parse(contents);
+                if (__instance.m_customData.TryGetValue(KillSaveKey, out var killContents))
+                    ParseKills(killContents);
                 PublishAll();
             }
         }
@@ -199,7 +223,8 @@ namespace Sirroh.SkillsAddon
                         return item.m_itemData.m_shared.m_name;
                     }
                 }
-            return null;
+            // Monsters without trophy items still qualify for per-species kill progress.
+            return "@prefab:" + name;
         }
 
         private static string NetworkKey(string trophy)
@@ -231,6 +256,9 @@ namespace Sirroh.SkillsAddon
             var parts = Points.OrderBy(p => p.Key, StringComparer.Ordinal)
                 .Select(p => p.Key + ":" + p.Value.ToString("R", CultureInfo.InvariantCulture));
             activePlayer.m_customData[SaveKey] = string.Join(",", parts);
+            activePlayer.m_customData[KillSaveKey] = string.Join(",",
+                KillCounts.OrderBy(k => k.Key, StringComparer.Ordinal)
+                    .Select(k => k.Key + ":" + k.Value.ToString(CultureInfo.InvariantCulture)));
         }
 
         private static void Parse(string raw)
@@ -245,6 +273,95 @@ namespace Sirroh.SkillsAddon
                     !float.IsNaN(level) && !float.IsInfinity(level))
                     Points[name] = Mathf.Clamp(level, 0f, pointsCap.Value);
             }
+        }
+
+        private static void ParseKills(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return;
+            foreach (string entry in raw.Split(','))
+            {
+                int at = entry.LastIndexOf(':');
+                if (at <= 0 || at >= entry.Length - 1) continue;
+                string token = entry.Substring(0, at);
+                if (int.TryParse(entry.Substring(at + 1), NumberStyles.Integer,
+                    CultureInfo.InvariantCulture, out int count) && count >= 0)
+                    KillCounts[token] = Math.Min(count, 100000000);
+            }
+        }
+
+        private static void ParseRarity(string entries)
+        {
+            rareExact = new HashSet<string>(
+                (entries ?? "").Split(',').Select(n => n.Trim()).Where(n => n.Length > 0),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static int RequiredKills(string prefab)
+        {
+            return rareExact.Contains(prefab) ? rareInterval.Value : commonInterval.Value;
+        }
+
+        // Kept separate from DropItems so every death counts even if RNG drops no trophy.
+        private static void CountKill(Character character)
+        {
+            if (!enabled.Value || character == null || character.IsPlayer() ||
+                character.IsTamed() || ZRoutedRpc.instance == null) return;
+            var view = ValheimAccess.View(character);
+            if (view == null || !view.IsOwner()) return;
+            var zdo = view.GetZDO();
+            if (zdo == null || !zdo.IsValid() || zdo.GetBool(KillAwardedZdo, false)) return;
+            ZDOID id = character.GetZDOID();
+            if (id == ZDOID.None || CountedDeaths.Contains(id)) return;
+            long peer = AttackerPeer(character);
+            if (peer == 0L) return; // No credited player; don't mark or award an unowned death.
+            string species = TrophyFor(character);
+            if (string.IsNullOrEmpty(species)) return;
+            string prefab = character.gameObject.name.Replace("(Clone)", "").Trim();
+            if (species.Length > 200 || prefab.Length > 150) return;
+            zdo.Set(KillAwardedZdo, true);
+            CountedDeaths.Add(id);
+            CountedDeathOrder.Enqueue(id);
+            while (CountedDeathOrder.Count > 2048)
+                CountedDeaths.Remove(CountedDeathOrder.Dequeue());
+            // Each kill goes only to its actual owner, not to every nearby player.
+            ZRoutedRpc.instance.InvokeRoutedRPC(peer, KillRpc, species, character.IsBoss() ? "@boss:" + prefab : prefab);
+        }
+
+        [HarmonyPatch(typeof(Character), "OnDeath")]
+        private static class CharacterDeathCounter
+        {
+            [HarmonyPrefix]
+            private static void Prefix(Character __instance) => CountKill(__instance);
+        }
+
+        private static void ReceiveKill(long sender, string species, string prefab)
+        {
+            if (!enabled.Value || activePlayer == null || string.IsNullOrEmpty(species) ||
+                string.IsNullOrEmpty(prefab) || species.Length > 200 || prefab.Length > 160) return;
+            if (serverAuthoritative.Value && sender != ValheimAccess.ServerPeerID()) return;
+            KillCounts.TryGetValue(species, out int previous);
+            if (previous >= 100000000) return;
+            int next = previous + 1;
+            KillCounts[species] = next;
+            int needed = prefab.StartsWith("@boss:", StringComparison.Ordinal)
+                ? rareInterval.Value : RequiredKills(prefab);
+            if (next % needed == 0)
+            {
+                Points.TryGetValue(species, out float current);
+                SetPoints(species, current + 1f);
+                if (current < pointsCap.Value)
+                    activePlayer.Message(MessageHud.MessageType.TopLeft,
+                        "Łowca Głów: " + DisplaySpecies(species) + " +" + 1 +
+                        " (" + next + " zabójstw)");
+            }
+            else Save(); // Persist remainder across character logout/restart.
+        }
+
+        private static string DisplaySpecies(string token)
+        {
+            if (token.StartsWith("@prefab:", StringComparison.Ordinal))
+                return token.Substring("@prefab:".Length);
+            return NormalizeLabel(Localization.instance?.Localize(token) ?? token);
         }
 
         internal static void ApplySpeciesBonus(Character victim, Character attacker, HitData hit)
@@ -337,7 +454,12 @@ namespace Sirroh.SkillsAddon
         private static class Death
         {
             [HarmonyPrefix]
-            private static void Prefix(CharacterDrop __instance) => deathContext = Capture(__instance?.GetComponent<Character>());
+            private static void Prefix(CharacterDrop __instance)
+            {
+                var creature = __instance?.GetComponent<Character>();
+                deathContext = Capture(creature);
+                CountKill(creature); // Fallback for creatures that bypass Character.OnDeath.
+            }
             [HarmonyFinalizer]
             private static void Finalizer() => deathContext = default;
         }
@@ -431,7 +553,7 @@ namespace Sirroh.SkillsAddon
             Publish(trophy);
             if (Mathf.FloorToInt(next) > Mathf.FloorToInt(old))
                 activePlayer.Message(MessageHud.MessageType.TopLeft,
-                    "Pogromca: " + NormalizeLabel(Localization.instance?.Localize(trophy) ?? trophy) +
+                    "Łowca Głów: " + DisplaySpecies(trophy) +
                     " " + Mathf.FloorToInt(next) + "/" + pointsCap.Value);
         }
 
@@ -498,9 +620,10 @@ namespace Sirroh.SkillsAddon
                     if (name == null || text == null) continue;
                     if (!DisplayToTrophy.TryGetValue(NormalizeLabel(name.text), out var key)) continue;
                     if (!Points.TryGetValue(key, out var value)) continue;
-                    string prefix = "Pogromca " + Mathf.FloorToInt(value) + "/" + pointsCap.Value;
+                    string prefix = "Łowca Głów " + Mathf.FloorToInt(value) + "/" + pointsCap.Value;
                     string detail = text.text;
-                    while (detail.StartsWith("Pogromca ", StringComparison.Ordinal))
+                    while ((detail.StartsWith("Łowca Głów ", StringComparison.Ordinal) ||
+                            detail.StartsWith("Pogromca ", StringComparison.Ordinal)))
                     {
                         int next = detail.IndexOf('\n');
                         if (next < 0) break;
@@ -516,6 +639,9 @@ namespace Sirroh.SkillsAddon
             activePlayer = null;
             publishedTo = ZDOID.None;
             Points.Clear();
+            KillCounts.Clear();
+            CountedDeaths.Clear();
+            CountedDeathOrder.Clear();
             CreatureToTrophy.Clear();
             DisplayToTrophy.Clear();
             deathContext = default;
