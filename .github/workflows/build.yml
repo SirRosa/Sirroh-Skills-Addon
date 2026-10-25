@@ -1,0 +1,71 @@
+name: Build Sirroh Skills Addon
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Cache Valheim dedicated server assemblies
+        uses: actions/cache@v4
+        id: valheim
+        with:
+          path: ${{ runner.temp }}/valheim/valheim_server_Data/Managed
+          key: valheim-1.0-dedicated-refs-v1
+      - uses: CyberAndrii/setup-steamcmd@v1
+        if: steps.valheim.outputs.cache-hit != 'true'
+      - name: Download game references
+        if: steps.valheim.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/valheim"
+          for i in 1 2 3; do
+            if steamcmd +force_install_dir "$RUNNER_TEMP/valheim" +login anonymous +app_update 896660 validate +quit &&
+              test -f "$RUNNER_TEMP/valheim/valheim_server_Data/Managed/assembly_valheim.dll"; then break; fi
+            sleep 5
+          done
+          test -f "$RUNNER_TEMP/valheim/valheim_server_Data/Managed/assembly_valheim.dll"
+      - name: Download BepInEx and Jotunn references
+        run: |
+          set -euo pipefail
+          mkdir -p .ci-deps "$RUNNER_TEMP/bep" "$RUNNER_TEMP/jotunn"
+          curl -fL --retry 3 -o "$RUNNER_TEMP/bep.zip" 'https://thunderstore.io/package/download/denikson/BepInExPack_Valheim/5.4.2351/'
+          unzip -q "$RUNNER_TEMP/bep.zip" -d "$RUNNER_TEMP/bep"
+          curl -fL --retry 3 -o "$RUNNER_TEMP/jotunn.zip" 'https://thunderstore.io/package/download/ValheimModding/Jotunn/2.30.2/'
+          unzip -q "$RUNNER_TEMP/jotunn.zip" -d "$RUNNER_TEMP/jotunn"
+          for item in BepInEx.dll 0Harmony.dll Jotunn.dll; do
+            src=$(find "$RUNNER_TEMP/bep" "$RUNNER_TEMP/jotunn" -name "$item" -print -quit)
+            test -n "$src"
+            cp "$src" ".ci-deps/$item"
+          done
+          for item in assembly_valheim.dll assembly_utils.dll UnityEngine.CoreModule.dll UnityEngine.dll UnityEngine.UI.dll UnityEngine.UIModule.dll Unity.TextMeshPro.dll; do
+            cp "$RUNNER_TEMP/valheim/valheim_server_Data/Managed/$item" ".ci-deps/$item"
+          done
+      - name: Verify isolation, migration and no duplicate stat writes
+        run: python3 tools/verify_contracts.py
+      - name: Compile net48 DLL
+        run: dotnet build SirrohSkillsAddon.csproj -c Release -p:ReferenceDir="$GITHUB_WORKSPACE/.ci-deps" --nologo
+      - name: Assemble Thunderstore package
+        run: |
+          mkdir -p dist/package
+          cp bin/Release/net48/SirrohSkillsAddon.dll dist/package/
+          cp README.md manifest.json dist/package/
+          python3 - <<'PY'
+          import json,zipfile,pathlib
+          m=json.loads(pathlib.Path('manifest.json').read_text())
+          with zipfile.ZipFile(f'dist/{m["name"]}-{m["version_number"]}.zip','w',zipfile.ZIP_DEFLATED) as z:
+              for p in sorted(pathlib.Path('dist/package').iterdir()): z.write(p,p.name)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SirrohSkillsAddon-v0.1.0
+          path: dist/*.zip
+          if-no-files-found: error
