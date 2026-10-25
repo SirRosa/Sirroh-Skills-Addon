@@ -66,6 +66,8 @@ jobs:
         run: dotnet run --project tools/ApiProbe.csproj -c Release -- .ci-deps/assembly_valheim.dll .ci-deps/BepInEx.dll
       - name: Verify isolation, migration and no duplicate stat writes
         run: python3 tools/verify_contracts.py
+      - name: Verify complete Blacksmithing Polish UI and head-hunter visibility
+        run: python3 tools/verify_progress_localization.py
       - name: Compile net48 DLL
         run: dotnet build SirrohSkillsAddon.csproj -c Release -p:ReferenceDir="$GITHUB_WORKSPACE/.ci-deps" --nologo
       - name: Assemble Thunderstore package
@@ -82,7 +84,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: SirrohSkillsAddon-v0.2.0
+          name: SirrohSkillsAddon-v0.3.0
           path: dist/*.zip
           if-no-files-found: error
 

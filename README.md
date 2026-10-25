@@ -46,3 +46,27 @@ Implementacja i testy kompilacji opisane w workflow `.github/workflows/build.yml
 - Nowe ustawienia Kolosa są w kategorii `Kolos`, Łowcy Głów w `Łowca Głów`. Poprzednie wartości konfiguracji nie są migrowane automatycznie, natomiast progres postaci jest zachowany.
 
 Przed wdrożeniem na docelowym świecie sprawdź host/klient: 1) zabójstwa bez dropu trofeum, 2) 10 i 5 killi z odpowiednim licznikiem, 3) zabójstwa chowańca, 4) jednoręczne vs dwuręczne bronie, 5) migracja zapisanych punktów, 6) statystyki ekwipunku Blacksmithing po ulepszeniu.
+
+## v0.3.0: postęp Łowcy Głów — poprawka
+
+Oryginalny Slayer Skills dopisywał tylko poziom gatunku do wpisów w zakładce trofeów. W przypadku braku zdobytego trofeum nie było żadnej pozycji UI. Wprowadzono dodatkowo:
+
+- Komunikat po **każdym** zabójstwie (np. „Łowca Głów: Jeleń — 3/10 zabójstw | poziom 2/100”), konfigurowalny przez `PokazPostepZabojstw`.
+- Panel **ŁOWCA GŁÓW • POSTĘP** przy otwartym ekwipunku. Pokazuje wszystkie gatunki z zapisanym postępem, w tym stworzenia bez trofeum; stronicowanie przy większej liczbie gatunków. Można wyłączyć przez `PanelPostepuWekwipunku`.
+- Dla wpisu w zakładce trofeów pokazuj także `0/100` oraz postęp zabójstw do progu 10/5, zamiast czekać na pierwszy punkt.
+- Przebudowywanie mapy nazw trofeów po zmianie języka gry na polski.
+
+## v0.3.0: polska lokalizacja Blacksmithing Expanded 1.2.4
+
+Dodatek tłumaczy **wszystkie 60 zidentyfikowanych opcji konfiguracyjnych** (nazwy, kategorie, objaśnienia), **Kowalstwo** w zakładce umiejętności, polski opis skilla, linie opisów przedmiotów („Wykuto przy Kowalstwie”, „Nasycenie żywiołem”) oraz wiadomość o bonusowym przedmiocie.
+
+Spolszczenie działa opcjonalnie, gdy Blacksmithing Expanded jest obecny, a językiem gry jest **Polish**. Zastosowano oryginalną metodę `SkillManager.LocalizeKey.Polish` i metadane konfiguracyjne: **nie zmieniono nazw kluczy BepInEx, wartości ustawień, kodu Blacksmithing Expanded ani danych wyposażenia**. Teksty diagnostyczne w konsoli pozostają w języku oryginału.
+
+## Etapy projektu
+
+1. **Ukończone w kodzie:** Kolos (Slayer), Zawadiaka, Łowca Głów, migracja starych punktów, liczniki zabójstw, panel, opcjonalny most Blacksmithing i polska lokalizacja.
+2. **Przeanalizowane:** brak wspólnego skilla XP z `HuntingSkill` z Sirroh Overhaul. Łowca Głów zapisuje niezależną tabelę punktów gatunkowych. Chowańce są wiązane z kluczem właściciela `sirroh.tresura.owner.v1`; poziomy stworzeń CLLC odczytywane przez `GetLevel()`.
+3. **Do przetestowania w Valheim (nie w CI):** rzeczywiste trafienia, trofea i komunikaty 1/10 oraz 1/5; zdalny właściciel zwierzęcia; właściwości zbroi i broni Blacksmithing po ulepszeniu/zapisie/odczycie; zachowanie UI z ZenUI; zmiana języka podczas gry.
+4. **Następna większa integracja:** BetterTames, LetMeTameYou, Husbandry po zatwierdzeniu powyższych testów. Tych modów addon nie wyłącza ani nie przejmuje, aby nie naruszyć AI czy synchronizacji zwierząt.
+
+Wersja `0.3.0` jest **testową**, a pomyślna kompilacja nie oznacza potwierdzonej zgodności w rozgrywce.
