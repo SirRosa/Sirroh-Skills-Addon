@@ -40,7 +40,20 @@ jobs:
           curl -fL --retry 3 -o "$RUNNER_TEMP/bep.zip" 'https://thunderstore.io/package/download/denikson/BepInExPack_Valheim/5.4.2351/'
           unzip -q "$RUNNER_TEMP/bep.zip" -d "$RUNNER_TEMP/bep"
           curl -fL --retry 3 -o "$RUNNER_TEMP/jotunn.zip" 'https://thunderstore.io/package/download/ValheimModding/Jotunn/2.30.2/'
-          unzip -q "$RUNNER_TEMP/jotunn.zip" -d "$RUNNER_TEMP/jotunn"
+          python3 - "$RUNNER_TEMP/jotunn.zip" "$RUNNER_TEMP/jotunn" <<'PY'
+          import pathlib,sys,zipfile,shutil
+          root=pathlib.Path(sys.argv[2]).resolve()
+          with zipfile.ZipFile(sys.argv[1]) as arc:
+              for item in arc.infolist():
+                  parts=pathlib.PurePosixPath(item.filename.replace(chr(92), '/'))
+                  if parts.is_absolute() or '..' in parts.parts: raise ValueError(item.filename)
+                  target=root.joinpath(*parts.parts)
+                  if item.is_dir(): target.mkdir(parents=True,exist_ok=True)
+                  else:
+                      target.parent.mkdir(parents=True,exist_ok=True)
+                      with arc.open(item) as reader,target.open('wb') as writer:
+                          shutil.copyfileobj(reader,writer)
+          PY
           for item in BepInEx.dll 0Harmony.dll Jotunn.dll; do
             src=$(find "$RUNNER_TEMP/bep" "$RUNNER_TEMP/jotunn" -name "$item" -print -quit)
             test -n "$src"
