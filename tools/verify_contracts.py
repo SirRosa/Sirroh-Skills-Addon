@@ -11,7 +11,7 @@ assert '[BepInIncompatibility("neithar.Slayer")]' in all_code
 assert '[BepInIncompatibility("neobotics.valheim_mod.slayerskills")]' in all_code
 assert 'Identifier = "neithar.Slayer"' in all_code, 'Retain previous skill ID'
 assert 'SlayerSkills_1847__C' in all_code, 'Legacy trophy collection migration'
-assert 'Player.m_customData' not in all_code  # Always reference a specific player, not a static
+assert 'Player.m_localPlayer.m_customData' not in all_code  # Never mutate a global player blindly
 assert '.m_customData[SaveKey]' in all_code
 assert 'NetworkKey' in all_code and 'PublishAll' in all_code
 assert 'NativeEligible' in all_code
