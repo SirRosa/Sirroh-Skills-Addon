@@ -40,5 +40,32 @@ foreach (var target in methodTargets)
                 string.Join(", ", method.Parameters.Select(p => p.ParameterType.Name + " " + p.Name)) + ")");
     }
 }
+
+static System.Collections.Generic.IEnumerable<TypeDefinition> Descend(TypeDefinition type)
+{
+    yield return type;
+    foreach (var nested in type.NestedTypes)
+        foreach (var descendant in Descend(nested))
+            yield return descendant;
+}
+var itemEnums = assembly.MainModule.Types.SelectMany(Descend)
+    .Where(t => t.IsEnum && t.Name == "ItemType").ToList();
+if (itemEnums.Count == 0)
+{
+    Console.Error.WriteLine("Cannot find ItemType enum");
+    failures++;
+}
+else
+{
+    var values = itemEnums.SelectMany(t => t.Fields.Where(f => f.IsLiteral)
+        .Select(f => new { f.Name, Value = Convert.ToInt32(f.Constant) })).ToList();
+    foreach (var check in new[] { (Name: "OneHandedWeapon", Value: 3), (Name: "TwoHandedWeapon", Value: 14) })
+    {
+        bool present = values.Any(v => v.Name == check.Name && v.Value == check.Value);
+        Console.WriteLine("ITEM TYPE " + check.Name + " = " + check.Value + (present ? " OK" : " MISMATCH"));
+        if (!present) failures++;
+    }
+}
+
 if (failures > 0) throw new Exception("Valheim 1.0 runtime target drift: " + failures + " missing methods");
 Console.WriteLine("Harmony target inspection passed.");
