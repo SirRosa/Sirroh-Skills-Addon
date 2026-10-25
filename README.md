@@ -47,26 +47,27 @@ Implementacja i testy kompilacji opisane w workflow `.github/workflows/build.yml
 
 Przed wdrożeniem na docelowym świecie sprawdź host/klient: 1) zabójstwa bez dropu trofeum, 2) 10 i 5 killi z odpowiednim licznikiem, 3) zabójstwa chowańca, 4) jednoręczne vs dwuręczne bronie, 5) migracja zapisanych punktów, 6) statystyki ekwipunku Blacksmithing po ulepszeniu.
 
-## v0.3.0: postęp Łowcy Głów — poprawka
+## v0.3.1: minimalny interfejs Łowcy Głów
 
-Oryginalny Slayer Skills dopisywał tylko poziom gatunku do wpisów w zakładce trofeów. W przypadku braku zdobytego trofeum nie było żadnej pozycji UI. Wprowadzono dodatkowo:
+- **Tylko zakładka trofeów.** Jedna dodatkowa linia pod trofeum zawiera np. `2/100 • 3/10` (pierwsza liczba: punkty gatunku; druga: zabójstwa do kolejnego punktu).
+- **Brak dodatkowego okna, panelu i wiadomości po każdym zabójstwie.** Usunięto IMGUI i odpowiednie opcje. Nadal obowiązują punkty za trofeum oraz +1 za każde 10/5 zabójstw.
+- Zachowana migracja starych wartości i zapis naliczonych zabójstw. Bieżące dane są ponownie wyświetlane po otwarciu zakładki trofeów.
+- Nazwy gatunków i lista trofeów odświeżają się po zmianie języka.
 
-- Komunikat po **każdym** zabójstwie (np. „Łowca Głów: Jeleń — 3/10 zabójstw | poziom 2/100”), konfigurowalny przez `PokazPostepZabojstw`.
-- Panel **ŁOWCA GŁÓW • POSTĘP** przy otwartym ekwipunku. Pokazuje wszystkie gatunki z zapisanym postępem, w tym stworzenia bez trofeum; stronicowanie przy większej liczbie gatunków. Można wyłączyć przez `PanelPostepuWekwipunku`.
-- Dla wpisu w zakładce trofeów pokazuj także `0/100` oraz postęp zabójstw do progu 10/5, zamiast czekać na pierwszy punkt.
-- Przebudowywanie mapy nazw trofeów po zmianie języka gry na polski.
+## v0.3.1: poprawione spolszczenie Blacksmithing Expanded
 
-## v0.3.0: polska lokalizacja Blacksmithing Expanded 1.2.4
+**Zidentyfikowana przyczyna braku polskich nazw w F1:** ConfigurationManager odczytuje tylko tagi klasy nazwanej dokładnie `ConfigurationManagerAttributes`. Poprzednio używaliśmy klasy `LabelTag`, którą ignorował. Teraz spolszczone są wszystkie 60 oryginalnych ustawień, kategorie oraz opisy konfiguracyjne widoczne w ConfigurationManager.
 
-Dodatek tłumaczy **wszystkie 60 zidentyfikowanych opcji konfiguracyjnych** (nazwy, kategorie, objaśnienia), **Kowalstwo** w zakładce umiejętności, polski opis skilla, linie opisów przedmiotów („Wykuto przy Kowalstwie”, „Nasycenie żywiołem”) oraz wiadomość o bonusowym przedmiocie.
+Dodatkowo:
+- rejestracja polskiej nazwy i opisu skilla **Kowalstwo** przez `SkillManager.LocalizeKey.Polish`;
+- tłumaczenie opisów przedmiotów (poziom wykucia i rodzaj infuzji) i komunikatu o dodatkowym wykonanym przedmiocie;
+- późna inicjalizacja po uruchomieniu obu pluginów, obsługa zmiany języka w trakcie gry, odświeżanie aktywnego okna ConfigurationManager;
+- przywrócenie angielskich nazw i opisów ustawień po zmianie języka z polskiego na inny.
 
-Spolszczenie działa opcjonalnie, gdy Blacksmithing Expanded jest obecny, a językiem gry jest **Polish**. Zastosowano oryginalną metodę `SkillManager.LocalizeKey.Polish` i metadane konfiguracyjne: **nie zmieniono nazw kluczy BepInEx, wartości ustawień, kodu Blacksmithing Expanded ani danych wyposażenia**. Teksty diagnostyczne w konsoli pozostają w języku oryginału.
+**Ważne:** angielskie wewnętrzne identyfikatory kluczy w pliku `org.bepinex.plugins.blacksmithingexpanded.cfg` pozostają bez zmian. Ich tłumaczenie bez migracji zrywałoby powiązanie z zapisanymi ustawieniami; tłumaczymy ich widoczne nazwy i opisy w interfejsie. Identyfikator skilla `Blacksmithing` również pozostaje oryginalny, aby nie zerować progresu.
 
-## Etapy projektu
+## Stan i pozostałe testy
 
-1. **Ukończone w kodzie:** Kolos (Slayer), Zawadiaka, Łowca Głów, migracja starych punktów, liczniki zabójstw, panel, opcjonalny most Blacksmithing i polska lokalizacja.
-2. **Przeanalizowane:** brak wspólnego skilla XP z `HuntingSkill` z Sirroh Overhaul. Łowca Głów zapisuje niezależną tabelę punktów gatunkowych. Chowańce są wiązane z kluczem właściciela `sirroh.tresura.owner.v1`; poziomy stworzeń CLLC odczytywane przez `GetLevel()`.
-3. **Do przetestowania w Valheim (nie w CI):** rzeczywiste trafienia, trofea i komunikaty 1/10 oraz 1/5; zdalny właściciel zwierzęcia; właściwości zbroi i broni Blacksmithing po ulepszeniu/zapisie/odczycie; zachowanie UI z ZenUI; zmiana języka podczas gry.
-4. **Następna większa integracja:** BetterTames, LetMeTameYou, Husbandry po zatwierdzeniu powyższych testów. Tych modów addon nie wyłącza ani nie przejmuje, aby nie naruszyć AI czy synchronizacji zwierząt.
-
-Wersja `0.3.0` jest **testową**, a pomyślna kompilacja nie oznacza potwierdzonej zgodności w rozgrywce.
+- Kompilacja i testy kontraktowe Valheim 1.0 przez GitHub Actions.
+- Konieczne testy w grze: w polskim F1 nazwy i opisy 60 opcji, zmiana języka, nazwa skilla Kowalstwo, tooltipy i aktualizacja licznika 1/10 w menu trofeów, multiplayer oraz brak utraty ulepszeń Blacksmithing.
+- Nie zmieniono oryginalnego DLL Blacksmithing Expanded ani Sirroh Overhaul; integracja jest opcjonalnym modułem dodatku.
