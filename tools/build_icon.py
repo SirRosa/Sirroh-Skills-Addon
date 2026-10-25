@@ -30,8 +30,8 @@ for y in range(N):
 
 def chunk(kind, data):
     return struct.pack('!I',len(data)) + kind + data + struct.pack('!I',zlib.crc32(kind+data)&0xffffffff)
-raw=b''.join(b'\\0'+rgba[i*N*4:(i+1)*N*4] for i in range(N))
-png=b'\\x89PNG\\r\\n\\x1a\\n'+chunk(b'IHDR',struct.pack('!2I5B',N,N,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,9))+chunk(b'IEND',b'')
+raw=b''.join(b'\0'+rgba[i*N*4:(i+1)*N*4] for i in range(N))
+png=b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',N,N,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,9))+chunk(b'IEND',b'')
 path=pathlib.Path(sys.argv[1] if len(sys.argv)>1 else 'icon.png')
 path.parent.mkdir(parents=True,exist_ok=True)
 path.write_bytes(png)

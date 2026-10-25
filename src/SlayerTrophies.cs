@@ -452,7 +452,14 @@ namespace Sirroh.SkillsAddon
                     if (!DisplayToTrophy.TryGetValue(NormalizeLabel(name.text), out var key)) continue;
                     if (!Points.TryGetValue(key, out var value)) continue;
                     string prefix = "Pogromca " + Mathf.FloorToInt(value) + "/" + pointsCap.Value;
-                    if (!text.text.StartsWith(prefix, StringComparison.Ordinal)) text.text = prefix + "\n" + text.text;
+                    string detail = text.text;
+                    while (detail.StartsWith("Pogromca ", StringComparison.Ordinal))
+                    {
+                        int next = detail.IndexOf('\\n');
+                        if (next < 0) break;
+                        detail = detail.Substring(next + 1);
+                    }
+                    text.text = prefix + "\\n" + detail;
                 }
             }
         }
