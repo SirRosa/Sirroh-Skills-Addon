@@ -70,7 +70,13 @@ namespace Sirroh.SkillsAddon
             if (dst == null || ReferenceEquals(src, dst) ||
                 !Garmazerstwo.IsFood(src) || !Garmazerstwo.IsFood(dst)) return true;
 
-            // This is a food-on-food gesture; consume the event even on invalid conditions.
+            // Same dish is an ordinary inventory move/stack, never a seasoning.
+            // Leave merging to vanilla: GarmazerstwoInventory still prevents
+            // losing independent bonuses when two stacks have different data.
+            if (string.Equals(Garmazerstwo.Prefab(src), Garmazerstwo.Prefab(dst),
+                    StringComparison.Ordinal)) return true;
+
+            // Only DIFFERENT food types invoke the seasoning confirmation.
             int dragCount = Convert.ToInt32(DragAmount.GetValue(gui));
             int count = Mathf.Min(dst.m_stack, Mathf.Min(src.m_stack, dragCount));
             if (count < 1)
