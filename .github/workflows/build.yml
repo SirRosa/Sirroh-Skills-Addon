@@ -1,7 +1,7 @@
 name: Build Sirroh Skills Addon
 on:
   push:
-    branches: [main]
+    branches: [main, 'test/**']
   workflow_dispatch:
 jobs:
   build:
@@ -84,7 +84,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: SirrohSkillsAddon-v0.3.1
+          name: SirrohSkillsAddon-v0.4.0
           path: dist/*.zip
           if-no-files-found: error
 
