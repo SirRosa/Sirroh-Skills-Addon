@@ -184,6 +184,16 @@ foreach (var ty in new [] { invType, dataType }.Where(t => t != null))
 }
 
 foreach (var method in (invType?.Methods ?? Enumerable.Empty<Mono.Cecil.MethodDefinition>())
+    .Where(m => m.Name == "AddItem" && m.Parameters.Count == 5 &&
+                m.Parameters[0].ParameterType.Name == "ItemData" && m.HasBody))
+{
+    Console.WriteLine("SEASON EXPLICIT IL START");
+    foreach (var instruction in method.Body.Instructions.Take(180))
+        Console.WriteLine("SEASON EXPLICIT IL " + instruction);
+    Console.WriteLine("SEASON EXPLICIT IL END");
+}
+
+foreach (var method in (invType?.Methods ?? Enumerable.Empty<Mono.Cecil.MethodDefinition>())
     .Where(m => m.Name == "AddItem" && m.Parameters.Count == 2 &&
                 m.Parameters[0].ParameterType.Name == "ItemData" &&
                 m.HasBody))
