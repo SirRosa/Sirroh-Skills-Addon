@@ -207,8 +207,10 @@ namespace Sirroh.SkillsAddon
 
             var plan = new Plan { Container = chest, Inventory = inv,
                 Fingerprint = InventoryFingerprint(inv) };
-            foreach (var item in items.Where(i => selected.Contains(Garmazerstwo.Prefab(i)) &&
-                Value(i) >= minimum))
+            var baseItems = new HashSet<ItemDrop.ItemData>(
+                items.Where(i => selected.Contains(Garmazerstwo.Prefab(i)) &&
+                                 Value(i) >= minimum));
+            foreach (var item in baseItems)
             {
                 string prefab = Garmazerstwo.Prefab(item);
                 string signature = DataSignature(item);
@@ -233,7 +235,7 @@ namespace Sirroh.SkillsAddon
                     string.CompareOrdinal(a.Prefab + a.DataSignature,
                                            b.Prefab + b.DataSignature);
             });
-            var ingredients = items.Where(i => !selected.Contains(Garmazerstwo.Prefab(i)))
+            var ingredients = items.Where(i => !baseItems.Contains(i))
                 .OrderBy(Garmazerstwo.Prefab, StringComparer.Ordinal)
                 .ThenBy(i => i.m_gridPos.y).ThenBy(i => i.m_gridPos.x)
                 .ToList();
@@ -243,14 +245,23 @@ namespace Sirroh.SkillsAddon
             {
                 for (int unit = 0; unit < source.m_stack; unit++)
                 {
-                    var target = plan.Bases[index % plan.Bases.Count];
-                    // Source prefab cannot be the target prefab because
-                    // all selected base prefabs are excluded from ingredients.
+                    // A lower-value variant of a selected recipe can season
+                    // another valuable recipe, but never the SAME food prefab.
+                    Group target = null;
+                    for (int offset = 0; offset < plan.Bases.Count; offset++)
+                    {
+                        int candidate = (index + offset) % plan.Bases.Count;
+                        if (plan.Bases[candidate].Prefab == Garmazerstwo.Prefab(source))
+                            continue;
+                        target = plan.Bases[candidate];
+                        index = candidate + 1;
+                        break;
+                    }
+                    if (target == null) break;
                     target.Spices.Add(source);
                     if (!plan.Consumed.ContainsKey(source)) plan.Consumed[source] = 0;
                     plan.Consumed[source]++;
                     plan.ConsumedCount++;
-                    index++;
                 }
             }
             return plan.Bases.Count > 0 && plan.ConsumedCount > 0 ? plan : null;
