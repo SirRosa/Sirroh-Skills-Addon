@@ -409,8 +409,9 @@ namespace Sirroh.SkillsAddon
                 }
                 catch (Exception e)
                 {
-                    // Restore metadata and original quantities. A fully removed
-                    // ingredient requires a native exact-slot reinsertion.
+                    // Restore metadata and quantities; report any incomplete
+                    // rollback explicitly rather than hiding an inventory risk.
+                    bool restored = true;
                     foreach (var snapshot in backups)
                     {
                         try
@@ -423,13 +424,17 @@ namespace Sirroh.SkillsAddon
                             }
                             else if (AddAtMethod != null)
                             {
-                                AddAtMethod.Invoke(plan.Inventory, new object[] {
-                                    snapshot.Backup, snapshot.Stack,
-                                    snapshot.Position.x, snapshot.Position.y, false });
+                                object inserted = AddAtMethod.Invoke(plan.Inventory,
+                                    new object[] { snapshot.Backup, snapshot.Stack,
+                                        snapshot.Position.x, snapshot.Position.y, false });
+                                if (inserted is bool ok && !ok)
+                                    restored = false;
                             }
+                            else restored = false;
                         }
                         catch (Exception restoreError)
                         {
+                            restored = false;
                             Plugin.Instance.Warning("Mieszaj: ROLLBACK FAILED: " +
                                 restoreError.Message);
                         }
@@ -439,9 +444,16 @@ namespace Sirroh.SkillsAddon
                         ChangedMethod.Invoke(plan.Inventory, new object[] { false, false });
                         SaveMethod.Invoke(plan.Container, null);
                     }
-                    catch (Exception) { }
+                    catch (Exception saveError)
+                    {
+                        restored = false;
+                        Plugin.Instance.Warning("Mieszaj: restore save failed: " +
+                            saveError.Message);
+                    }
                     Plugin.Instance.Warning("Mieszaj: transakcja anulowana: " + e);
-                    Message("Mieszaj: błąd zapisu, przywrócono zawartość skrzyni.");
+                    Message(restored
+                        ? "Mieszaj: błąd zapisu; przywrócono zawartość skrzyni."
+                        : "UWAGA Mieszaj: przywrócenie niepełne! Sprawdź zawartość skrzyni i logi.");
                 }
                 if (success)
                 {
