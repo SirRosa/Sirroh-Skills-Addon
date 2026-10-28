@@ -207,7 +207,8 @@ namespace Sirroh.SkillsAddon
 
             var plan = new Plan { Container = chest, Inventory = inv,
                 Fingerprint = InventoryFingerprint(inv) };
-            foreach (var item in items.Where(i => selected.Contains(Garmazerstwo.Prefab(i))))
+            foreach (var item in items.Where(i => selected.Contains(Garmazerstwo.Prefab(i)) &&
+                Value(i) >= minimum))
             {
                 string prefab = Garmazerstwo.Prefab(item);
                 string signature = DataSignature(item);
