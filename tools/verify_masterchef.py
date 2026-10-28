@@ -35,7 +35,7 @@ assert "Mathf.Clamp(data.Hp, 0f, Garmazerstwo.SpiceLimit" in zen
 assert "Mathf.Clamp(data.Stamina, 0f, Garmazerstwo.SpiceLimit" in zen
 assert "Mathf.Clamp(data.Eitr, 0f, Garmazerstwo.SpiceLimit" in zen
 assert "remaining[source]--;" in mix
-assert "if (!Garmazerstwo.AddSpice(simulated, source," in mix
+assert "!Garmazerstwo.AddSpice(simulated, source," in mix
 assert "if (applied) continue;" in mix
 assert "Garmazerstwo.IsMaster(i)" in mix
 assert "OrderByDescending(Value)" in mix
