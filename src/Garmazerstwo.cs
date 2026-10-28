@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using BepInEx.Configuration;
 using HarmonyLib;
 using UnityEngine;
@@ -27,25 +28,16 @@ namespace Sirroh.SkillsAddon
         private static float lastCookTime;
         private static MethodInfo getTooltip;
 
-        internal sealed class Spice
-        {
-            internal string Source;
-            internal float Hp, Stamina, Eitr, HpRegen, StaminaRegen, EitrRegen;
-        }
-
+        // v2: one aggregate per stat, one star per completed seasoning. No source history.
+        // v1 data is still readable and migrated when the item is seasoned again.
         internal sealed class Food
         {
             internal int Level;
             internal float CookPercent;
             internal string Buff = "";
             internal float BuffValue;
-            internal readonly List<Spice> Spices = new List<Spice>(5);
-            internal float Hp => Spices.Sum(s => s.Hp);
-            internal float Stamina => Spices.Sum(s => s.Stamina);
-            internal float Eitr => Spices.Sum(s => s.Eitr);
-            internal float HpRegen => Spices.Sum(s => s.HpRegen);
-            internal float StaminaRegen => Spices.Sum(s => s.StaminaRegen);
-            internal float EitrRegen => Spices.Sum(s => s.EitrRegen);
+            internal int Stars;
+            internal float Hp, Stamina, Eitr, HpRegen, StaminaRegen, EitrRegen;
         }
 
         internal static void Configure(ConfigFile cfg)
@@ -102,17 +94,12 @@ namespace Sirroh.SkillsAddon
 
         internal static string Serialize(Food data)
         {
-            var s = new StringBuilder("v1|");
-            s.Append(data.Level).Append('|').Append(F(data.CookPercent)).Append('|');
-            s.Append(Uri.EscapeDataString(data.Buff ?? "")).Append('|').Append(F(data.BuffValue));
-            foreach (var spice in data.Spices.Take(5))
-            {
-                s.Append('|').Append(Uri.EscapeDataString(spice.Source ?? ""));
-                s.Append(',').Append(F(spice.Hp)).Append(',').Append(F(spice.Stamina))
-                 .Append(',').Append(F(spice.Eitr)).Append(',').Append(F(spice.HpRegen))
-                 .Append(',').Append(F(spice.StaminaRegen)).Append(',').Append(F(spice.EitrRegen));
-            }
-            return s.ToString();
+            // Compact, locale-invariant and deterministic for stack identity checks.
+            return string.Join("|", new[] { "v2",
+                data.Level.ToString(C), F(data.CookPercent),
+                Uri.EscapeDataString(data.Buff ?? ""), F(data.BuffValue),
+                data.Stars.ToString(C), F(data.Hp), F(data.Stamina), F(data.Eitr),
+                F(data.HpRegen), F(data.StaminaRegen), F(data.EitrRegen) });
         }
 
         internal static Food Parse(string raw)
@@ -121,28 +108,41 @@ namespace Sirroh.SkillsAddon
             try
             {
                 string[] parts = raw.Split('|');
-                if (parts.Length < 5 || parts.Length > 10 || parts[0] != "v1") return null;
-                if (!int.TryParse(parts[1], NumberStyles.Integer, C, out int level)) return null;
-                var data = new Food
-                {
+                if (parts.Length < 5 ||
+                    !int.TryParse(parts[1], NumberStyles.Integer, C, out int level)) return null;
+                var data = new Food {
                     Level = Mathf.Clamp(level, 0, 100),
                     CookPercent = Mathf.Clamp(ReadFloat(parts[2]), 0f, 1f),
                     Buff = Uri.UnescapeDataString(parts[3]),
                     BuffValue = Mathf.Clamp(ReadFloat(parts[4]), 0f, 1f)
                 };
+                if (parts[0] == "v2")
+                {
+                    if (parts.Length != 12 ||
+                        !int.TryParse(parts[5], NumberStyles.Integer, C, out int stars) ||
+                        stars < 0 || stars > 5) return null;
+                    data.Stars = stars;
+                    data.Hp = Mathf.Max(0f, ReadFloat(parts[6]));
+                    data.Stamina = Mathf.Max(0f, ReadFloat(parts[7]));
+                    data.Eitr = Mathf.Max(0f, ReadFloat(parts[8]));
+                    data.HpRegen = Mathf.Max(0f, ReadFloat(parts[9]));
+                    data.StaminaRegen = Mathf.Max(0f, ReadFloat(parts[10]));
+                    data.EitrRegen = Mathf.Max(0f, ReadFloat(parts[11]));
+                    return data;
+                }
+                if (parts[0] != "v1" || parts.Length > 10) return null;
+                // No old bonuses are discarded. They become six cumulative totals.
                 for (int i = 5; i < parts.Length; ++i)
                 {
                     string[] values = parts[i].Split(',');
                     if (values.Length != 7) return null;
-                    data.Spices.Add(new Spice {
-                        Source = Uri.UnescapeDataString(values[0]),
-                        Hp = Mathf.Max(0, ReadFloat(values[1])),
-                        Stamina = Mathf.Max(0, ReadFloat(values[2])),
-                        Eitr = Mathf.Max(0, ReadFloat(values[3])),
-                        HpRegen = Mathf.Max(0, ReadFloat(values[4])),
-                        StaminaRegen = Mathf.Max(0, ReadFloat(values[5])),
-                        EitrRegen = Mathf.Max(0, ReadFloat(values[6]))
-                    });
+                    data.Stars++;
+                    data.Hp += Mathf.Max(0f, ReadFloat(values[1]));
+                    data.Stamina += Mathf.Max(0f, ReadFloat(values[2]));
+                    data.Eitr += Mathf.Max(0f, ReadFloat(values[3]));
+                    data.HpRegen += Mathf.Max(0f, ReadFloat(values[4]));
+                    data.StaminaRegen += Mathf.Max(0f, ReadFloat(values[5]));
+                    data.EitrRegen += Mathf.Max(0f, ReadFloat(values[6]));
                 }
                 return data;
             }
@@ -222,41 +222,67 @@ namespace Sirroh.SkillsAddon
             if (Time.time - lastCookTime > 120f) cookStreak = 0;
             cookStreak = Mathf.Min(100, cookStreak + count);
             lastCookTime = Time.time;
-            float streak = Mathf.Clamp01((EffectiveCookingStreak() - 1f) / 10f);
             var data = new Food {
                 Level = Mathf.RoundToInt(level),
-                CookPercent = level / 100f * (CookMax.Value + StreakMax.Value * streak) / 100f
+                CookPercent = CookPercentage(level)
             };
             data.Buff = RollBuff(item, out data.BuffValue);
             Write(item, data);
             if (awardXp) AwardCookingXp(count);
         }
 
-        internal static Spice BuildSpice(ItemDrop.ItemData source, float level)
+        internal static float CookPercentage(float level)
         {
-            if (!IsFood(source)) return null;
-            var d = source.m_shared;
-            float percent = .05f + .05f * Mathf.Clamp01(level / 100f);
-            float addHp = d.m_food > 0f ? Mathf.Max(1f, Mathf.Round(d.m_food * percent)) : 0f;
-            float addStamina = d.m_foodStamina > 0f ? Mathf.Max(1f, Mathf.Round(d.m_foodStamina * percent)) : 0f;
-            float addEitr = d.m_foodEitr > 0f ? Mathf.Max(1f, Mathf.Round(d.m_foodEitr * percent)) : 0f;
-            return new Spice {
-                Source = Prefab(source),
-                Hp = addHp,
-                Stamina = addStamina,
-                Eitr = addEitr,
-                HpRegen = d.m_food > 0f ? Mathf.Max(1f, Mathf.Round(d.m_foodRegen * percent)) : 0f,
-                StaminaRegen = addStamina > 0f ? Mathf.Max(1f, Mathf.Round(addStamina * .1f)) : 0f,
-                EitrRegen = addEitr > 0f ? Mathf.Max(1f, Mathf.Round(addEitr * .1f)) : 0f
-            };
+            level = Mathf.Clamp(level, 0f, 100f);
+            float streak = Mathf.Clamp01((EffectiveCookingStreak() - 1f) / 10f);
+            return level / 100f * (CookMax.Value + StreakMax.Value * streak) / 100f;
+        }
+
+        internal static void Effective(ItemDrop.ItemData item, out float hp,
+            out float stamina, out float eitr, out float regenHp, out float regenStamina,
+            out float regenEitr)
+        {
+            var d = item.m_shared;
+            var record = Read(item);
+            float multiplier = 1f + (record?.CookPercent ?? 0f);
+            hp = d.m_food * multiplier + (record?.Hp ?? 0f);
+            stamina = d.m_foodStamina * multiplier + (record?.Stamina ?? 0f);
+            eitr = d.m_foodEitr * multiplier + (record?.Eitr ?? 0f);
+            regenHp = d.m_foodRegen + (record?.HpRegen ?? 0f);
+            regenStamina = record?.StaminaRegen ?? 0f;
+            regenEitr = record?.EitrRegen ?? 0f;
         }
 
         internal static bool AddSpice(Food data, ItemDrop.ItemData source, float skillLevel)
         {
-            if (data == null || data.Spices.Count >= 5) return false;
-            var spice = BuildSpice(source, skillLevel);
-            if (spice == null) return false;
-            data.Spices.Add(spice);
+            if (data == null || data.Stars >= 5 || !IsFood(source)) return false;
+            // Read the *fully prepared* source. A five-star ingredient adds one
+            // star to the target, but its strengthened numbers are transferred.
+            Effective(source, out float hp, out float stamina, out float eitr,
+                out float hpRegen, out float staminaRegen, out float eitrRegen);
+            float percent = .05f + .05f * Mathf.Clamp01(skillLevel / 100f);
+            float bonusHp = hp > 0f ? Mathf.Max(1f, Mathf.Round(hp * percent)) : 0f;
+            float bonusStamina = stamina > 0f ? Mathf.Max(1f, Mathf.Round(stamina * percent)) : 0f;
+            float bonusEitr = eitr > 0f ? Mathf.Max(1f, Mathf.Round(eitr * percent)) : 0f;
+            data.Hp += bonusHp;
+            data.Stamina += bonusStamina;
+            data.Eitr += bonusEitr;
+            if (hpRegen > 0f)
+                data.HpRegen += Mathf.Max(1f, Mathf.Round(hpRegen * percent));
+            if (stamina > 0f)
+                data.StaminaRegen += Mathf.Max(1f, Mathf.Round(
+                    staminaRegen * percent + bonusStamina * .1f));
+            if (eitr > 0f)
+                data.EitrRegen += Mathf.Max(1f, Mathf.Round(
+                    eitrRegen * percent + bonusEitr * .1f));
+            data.Stars++;
+            // Seasoning refreshes the *target's* cooking level and its base bonus,
+            // even when the target was originally prepared at level zero.
+            data.Level = Mathf.RoundToInt(Mathf.Clamp(skillLevel, 0f, 100f));
+            data.CookPercent = CookPercentage(skillLevel);
+            // Do not reroll an existing special effect on every seasoning.
+            if (string.IsNullOrEmpty(data.Buff) && skillLevel >= 75f)
+                data.Buff = RollBuff(source, out data.BuffValue);
             return true;
         }
 
@@ -288,34 +314,59 @@ namespace Sirroh.SkillsAddon
             { "taming", "Szybsze oswajanie" }, { "experience", "Zdobywane PD" }
         };
 
+        // Only update existing Valheim lines. No verbose source history or
+        // duplicate "food totals" below the original tooltip.
         private static void Tooltip(ItemDrop.ItemData item, ref string __result)
         {
             if (item == null || string.IsNullOrEmpty(__result)) return;
             Food data = Read(item);
             if (data == null) return;
-            __result += "\n<color=#D6B36B>Ugotowano na poziomie " + data.Level +
-                        " Garmażerstwa</color>";
-            __result += "\n<color=#D6B36B>Statystyki posiłku: HP " +
-                F(item.m_shared.m_food * (1f + data.CookPercent) + data.Hp) +
-                ", stamina " + F(item.m_shared.m_foodStamina * (1f + data.CookPercent) + data.Stamina) +
-                ", Eitr " + F(item.m_shared.m_foodEitr * (1f + data.CookPercent) + data.Eitr) +
-                "</color>";
-            if (data.Spices.Count > 0)
+            Effective(item, out float hp, out float stamina, out float eitr,
+                out float heal, out float stRegen, out float eRegen);
+            string[] lines = __result.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
             {
-                __result += "\n<color=#D6B36B>Przyprawienie: " + data.Spices.Count + "/5 ★</color>";
-                foreach (var spice in data.Spices)
-                {
-                    __result += "\n<color=#A9C59B>★ " + spice.Source +
-                        " (HP +" + F(spice.Hp) + ", stamina +" + F(spice.Stamina) +
-                        ", Eitr +" + F(spice.Eitr) + ")</color>";
-                }
-                __result += "\n<color=#A9C59B>Regeneracja: HP +" + F(data.HpRegen) +
-                            ", stamina +" + F(data.StaminaRegen) +
-                            ", Eitr +" + F(data.EitrRegen) + "</color>";
+                if (IsStatLine(lines[i], "Życie", "Zdrowie", "Health"))
+                    lines[i] = ReplaceFirstValue(lines[i], hp);
+                else if (IsStatLine(lines[i], "Kondycja", "Stamina"))
+                    lines[i] = ReplaceFirstValue(lines[i], stamina);
+                else if (IsStatLine(lines[i], "Eitr"))
+                    lines[i] = ReplaceFirstValue(lines[i], eitr);
+                else if (IsStatLine(lines[i], "Leczenie", "Healing"))
+                    lines[i] = ReplaceFirstValue(lines[i], heal);
             }
+            __result = string.Join("\n", lines);
+            // One concise line for the updated level; stars are on the item icon.
+            __result += "\n<color=#D6B36B>Garmażerstwo: " + data.Level + "</color>";
             if (!string.IsNullOrEmpty(data.Buff) && BuffNames.TryGetValue(data.Buff, out var name))
                 __result += "\n<color=#87CEEB>" + name + ": +" +
-                            Mathf.RoundToInt(data.BuffValue * 100f) + "%</color>";
+                    Mathf.RoundToInt(data.BuffValue * 100f) + "%</color>";
+        }
+
+        private static bool IsStatLine(string raw, params string[] names)
+        {
+            string plain = Regex.Replace(raw, "<[^>]+>", "").TrimStart();
+            foreach (string name in names)
+                if (plain.StartsWith(name + ":", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
+        }
+
+        private static string ReplaceFirstValue(string line, float value)
+        {
+            int colon = line.IndexOf(':');
+            if (colon < 0) return line;
+            Match match = Regex.Match(line.Substring(colon + 1),
+                @"^(?:\s|<[^>]+>)*(-?\d+(?:[.,]\d+)?)");
+            if (!match.Success) return line;
+            Group number = match.Groups[1];
+            int start = colon + 1 + number.Index;
+            string formatted = Mathf.Approximately(value, Mathf.Round(value))
+                ? Mathf.RoundToInt(value).ToString(C)
+                : value.ToString("0.#", C);
+            if (number.Value.Contains(",")) formatted = formatted.Replace(".", ",");
+            return line.Substring(0, start) + formatted +
+                   line.Substring(start + number.Length);
         }
 
         // Run only around successful production, never when eating an existing food.
