@@ -46,7 +46,10 @@ namespace Sirroh.SkillsAddon
         {
             _visible = true;
             Ensure(__instance);
-            Refresh(__instance);
+            // The Unity layout is not guaranteed to be ready inside Show().
+            // Force one safe position pass on the next Update tick instead.
+            _screenW = -1;
+            _screenH = -1;
         }
 
         private static void Hidden()
@@ -70,6 +73,35 @@ namespace Sirroh.SkillsAddon
                 if (_qolWood != null) return _qolWood;
             }
             return null;
+        }
+
+        // ImageConversionModule in the dedicated-server reference set depends
+        // on netstandard 2.1, while the BepInEx plugin targets net48. A
+        // reflected call uses the game client's actual Unity module instead
+        // of introducing a binary compile/runtime dependency on that DLL.
+        private static bool DecodePng(Texture2D texture, byte[] png)
+        {
+            if (texture == null || png == null || png.Length == 0) return false;
+            try
+            {
+                Type t = AccessTools.TypeByName("UnityEngine.ImageConversion");
+                if (t == null) return false;
+                MethodInfo method = t.GetMethod("LoadImage",
+                    BindingFlags.Public | BindingFlags.Static, null,
+                    new[] { typeof(Texture2D), typeof(byte[]), typeof(bool) }, null);
+                if (method != null)
+                    return (bool)method.Invoke(null, new object[] { texture, png, true });
+                method = t.GetMethod("LoadImage",
+                    BindingFlags.Public | BindingFlags.Static, null,
+                    new[] { typeof(Texture2D), typeof(byte[]) }, null);
+                return method != null &&
+                    (bool)method.Invoke(null, new object[] { texture, png });
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance?.Warning("Mieszaj: błąd dekodera PNG: " + e.Message);
+                return false;
+            }
         }
 
         private static Sprite LoadKettle()
@@ -96,7 +128,7 @@ namespace Sirroh.SkillsAddon
                         offset += read;
                     }
                     _symbolTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-                    if (ImageConversion.LoadImage(_symbolTexture, bytes, true))
+                    if (DecodePng(_symbolTexture, bytes))
                     {
                         _symbol = Sprite.Create(_symbolTexture,
                             new Rect(0f,0f,_symbolTexture.width,_symbolTexture.height),
@@ -116,7 +148,7 @@ namespace Sirroh.SkillsAddon
                 {
                     var bytes = File.ReadAllBytes(path);
                     _symbolTexture = new Texture2D(2,2,TextureFormat.RGBA32,false);
-                    if (ImageConversion.LoadImage(_symbolTexture,bytes,true))
+                    if (DecodePng(_symbolTexture,bytes))
                     {
                         _symbol = Sprite.Create(_symbolTexture,
                             new Rect(0,0,_symbolTexture.width,_symbolTexture.height),
