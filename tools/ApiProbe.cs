@@ -110,6 +110,31 @@ foreach (var typeName in new[] { "Player", "Character", "Humanoid", "CookingStat
             ") -> " + m.ReturnType.Name);
 }
 
+
+foreach (var tn in new[] { "InventoryElement", "InventoryGrid", "ItemDrop/ItemData" })
+{
+    var ty = assembly.MainModule.Types.SelectMany(Descend)
+        .FirstOrDefault(t => t.Name == tn || t.FullName == tn);
+    if (ty == null) continue;
+    foreach (var fld in ty.Fields.Where(f =>
+        f.Name.IndexOf("icon", StringComparison.OrdinalIgnoreCase) >= 0 ||
+        f.Name.IndexOf("quality", StringComparison.OrdinalIgnoreCase) >= 0 ||
+        f.Name.IndexOf("queued", StringComparison.OrdinalIgnoreCase) >= 0 ||
+        f.Name.IndexOf("element", StringComparison.OrdinalIgnoreCase) >= 0))
+        Console.WriteLine("FOOD UI FIELD " + tn + "." + fld.Name + " : " + fld.FieldType.FullName);
+    foreach (var m in ty.Methods.Where(m => m.Name == "GetTooltip" || m.Name == "UpdateGui"))
+    {
+        Console.WriteLine("FOOD UI METHOD " + ty.Name + "." + m.Name + "(" +
+            string.Join(", ", m.Parameters.Select(p => p.ParameterType.FullName)) + ")");
+        if (m.HasBody)
+            foreach (var ins in m.Body.Instructions.Where(i => i.OpCode.Code == Mono.Cecil.Cil.Code.Ldstr))
+            {
+                var val = Convert.ToString(ins.Operand);
+                if (!string.IsNullOrEmpty(val) && (val.Contains("food") || val.Contains("quality") || val.Contains("item_")))
+                    Console.WriteLine("FOOD UI STRING " + val.Replace("\\n", "\\n").Replace("\\r","").Substring(0, Math.Min(180, val.Length)));
+            }
+    }
+}
 // Game-version diagnostic: read the currently fetched Steam dedicated server's
 // managed assembly metadata without asserting that it is a tested 1.0.21 client.
 foreach (var vt in assembly.MainModule.Types.Where(t =>
