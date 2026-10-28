@@ -155,6 +155,16 @@ foreach (var type in assembly.MainModule.Types.SelectMany(Descend)
                     .Substring(0, Math.Min(v.Length, 180)));
         }
     }
+foreach (var probeName in new[] { "ItemData", "ItemDrop/ItemData" })
+{
+    foreach (var td in assembly.MainModule.Types.SelectMany(Descend)
+        .Where(t => t.FullName == probeName))
+    {
+        Console.WriteLine("ZEN BRIDGE TYPE " + td.FullName + " BASE " + td.BaseType?.FullName);
+        foreach (var fld in td.Fields.Where(f => f.Name == "m_customData" || f.Name == "m_shared"))
+            Console.WriteLine("ZEN BRIDGE FIELD " + td.FullName + "." + fld.Name + " " + fld.FieldType.FullName);
+    }
+}
 // Game-version diagnostic: read the currently fetched Steam dedicated server's
 // managed assembly metadata without asserting that it is a tested 1.0.21 client.
 foreach (var vt in assembly.MainModule.Types.Where(t =>
