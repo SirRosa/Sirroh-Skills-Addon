@@ -61,10 +61,10 @@ namespace Sirroh.SkillsAddon
         {
             TryPatch(harmony, typeof(Player), "GetJogSpeedFactor", nameof(SpeedFactor), false);
             TryPatch(harmony, typeof(Player), "GetRunSpeedFactor", nameof(SpeedFactor), false);
-            TryPatch(harmony, typeof(Player), "GetSwimSpeedFactor", nameof(SwimFactor), false);
+            TryPatch(harmony, typeof(Player), "OnSwimming", nameof(SwimTarget), true);
             TryPatch(harmony, typeof(Player), "UseStamina", nameof(StaminaCost), true);
             TryPatch(harmony, typeof(Player), "UseEitr", nameof(EitrCost), true);
-            TryPatch(harmony, typeof(Player), "Jump", nameof(JumpBonus), false);
+            TryPatch(harmony, typeof(Character), "Jump", nameof(JumpBonus), false);
             TryPatch(harmony, typeof(Tameable), "DecreaseRemainingTime", nameof(TamingBonus), true);
         }
 
@@ -215,7 +215,7 @@ namespace Sirroh.SkillsAddon
             {
                 var item = Item(food);
                 var data = Data(food);
-                if (data == null) continue;
+                if (data == null || item?.m_shared == null) continue;
                 if (!string.IsNullOrEmpty(data.Buff))
                 {
                     if (!state.Buffs.TryGetValue(data.Buff, out float previous) ||
@@ -235,10 +235,14 @@ namespace Sirroh.SkillsAddon
                 __result *= 1f + Buff(__instance, "speed");
         }
 
-        private static void SwimFactor(Player __instance, ref float __result)
+        // Modify only swim movement velocity, not equipment stamina or other movement modes.
+        private static void SwimTarget(Player __instance, ref Vector3 __0)
         {
-            if (ReferenceEquals(__instance, Player.m_localPlayer))
-                __result *= 1f + Buff(__instance, "swim");
+            if (!ReferenceEquals(__instance, Player.m_localPlayer)) return;
+            float boost = Buff(__instance, "swim");
+            if (boost <= 0f) return;
+            __0.x *= 1f + boost;
+            __0.z *= 1f + boost;
         }
 
         private static void StaminaCost(Player __instance, ref float __0)
@@ -254,10 +258,10 @@ namespace Sirroh.SkillsAddon
         }
 
         // Jump height scales only the initial upward velocity, never flight/falling velocity.
-        private static void JumpBonus(Player __instance)
+        private static void JumpBonus(Character __instance)
         {
             if (!ReferenceEquals(__instance, Player.m_localPlayer)) return;
-            float value = Buff(__instance, "jump");
+            float value = Buff(Player.m_localPlayer, "jump");
             if (value <= 0f) return;
             var bodyField = AccessTools.Field(typeof(Character), "m_body");
             var body = bodyField?.GetValue(__instance) as Rigidbody ??
