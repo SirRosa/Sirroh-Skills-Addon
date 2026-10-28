@@ -17,7 +17,7 @@ namespace Sirroh.SkillsAddon
         private sealed class State
         {
             internal readonly Dictionary<string, float> Buffs = new Dictionary<string, float>(StringComparer.Ordinal);
-            internal float HpRegen, StaminaRegen, EitrRegen;
+            internal float HpRegen, StaminaRegen, EitrRegen, VanillaHpRegen, VanillaEitr;
             internal float NextRefresh, NextRegen;
         }
         private static readonly ConditionalWeakTable<Player, State> States = new ConditionalWeakTable<Player, State>();
@@ -64,6 +64,8 @@ namespace Sirroh.SkillsAddon
             TryPatch(harmony, typeof(Player), "GetSwimSpeedFactor", nameof(SwimFactor), false);
             TryPatch(harmony, typeof(Player), "UseStamina", nameof(StaminaCost), true);
             TryPatch(harmony, typeof(Player), "UseEitr", nameof(EitrCost), true);
+            TryPatch(harmony, typeof(Player), "Jump", nameof(JumpBonus), false);
+            TryPatch(harmony, typeof(Tameable), "DecreaseRemainingTime", nameof(TamingBonus), true);
         }
 
         private static void TryPatch(Harmony harmony, Type owner, string name, string callback, bool prefix)
@@ -206,6 +208,7 @@ namespace Sirroh.SkillsAddon
             state.NextRefresh = Time.time + .4f;
             state.Buffs.Clear();
             state.HpRegen = state.StaminaRegen = state.EitrRegen = 0f;
+            state.VanillaHpRegen = state.VanillaEitr = 0f;
             var foods = FoodEntries(player);
             if (foods == null) return;
             foreach (var food in foods)
@@ -221,6 +224,8 @@ namespace Sirroh.SkillsAddon
                 state.HpRegen += data.HpRegen;
                 state.StaminaRegen += data.StaminaRegen;
                 state.EitrRegen += data.EitrRegen;
+                state.VanillaHpRegen += item.m_shared.m_foodRegen;
+                state.VanillaEitr += item.m_shared.m_foodEitr;
             }
         }
 
@@ -246,6 +251,33 @@ namespace Sirroh.SkillsAddon
         {
             if (ReferenceEquals(__instance, Player.m_localPlayer))
                 __0 *= 1f - Buff(__instance, "eitr_cost");
+        }
+
+        // Jump height scales only the initial upward velocity, never flight/falling velocity.
+        private static void JumpBonus(Player __instance)
+        {
+            if (!ReferenceEquals(__instance, Player.m_localPlayer)) return;
+            float value = Buff(__instance, "jump");
+            if (value <= 0f) return;
+            var bodyField = AccessTools.Field(typeof(Character), "m_body");
+            var body = bodyField?.GetValue(__instance) as Rigidbody ??
+                       __instance.GetComponent<Rigidbody>();
+            if (body == null || body.velocity.y <= 0f) return;
+            Vector3 velocity = body.velocity;
+            velocity.y *= Mathf.Sqrt(1f + value); // Height ~ squared jump velocity.
+            body.velocity = velocity;
+        }
+
+        // Vanilla calls this only when the creature is fed, calm and owned by this client.
+        // Never rewrite the tame ZDO or alter already-tamed creatures.
+        private static void TamingBonus(Tameable __instance, ref float __0)
+        {
+            var player = Player.m_localPlayer;
+            if (player == null || __instance == null || __0 <= 0f ||
+                Vector3.Distance(player.transform.position, __instance.transform.position) > 60f)
+                return;
+            float value = Buff(player, "taming");
+            if (value > 0f) __0 *= 1f + value;
         }
 
         // EatFood only returns true if the game actually accepted a new meal.
@@ -304,12 +336,18 @@ namespace Sirroh.SkillsAddon
                 state.NextRegen = Time.time + 1f;
                 try
                 {
-                    if (state.HpRegen > 0f && Heal != null)
-                        Heal.Invoke(__instance, new object[] { state.HpRegen / 10f, true });
+                    float extraHealth = state.HpRegen;
+                    if (state.Buffs.TryGetValue("hp_regen", out float hpBonus))
+                        extraHealth += state.VanillaHpRegen * hpBonus;
+                    if (extraHealth > 0f && Heal != null)
+                        Heal.Invoke(__instance, new object[] { extraHealth / 10f, true });
                     if (state.StaminaRegen > 0f && AddStamina != null)
                         AddStamina.Invoke(__instance, new object[] { state.StaminaRegen });
-                    if (state.EitrRegen > 0f && AddEitr != null)
-                        AddEitr.Invoke(__instance, new object[] { state.EitrRegen });
+                    float extraEitr = state.EitrRegen;
+                    if (state.Buffs.TryGetValue("eitr_regen", out float eitrBonus))
+                        extraEitr += state.VanillaEitr * .033f * eitrBonus;
+                    if (extraEitr > 0f && AddEitr != null)
+                        AddEitr.Invoke(__instance, new object[] { extraEitr });
                 }
                 catch (Exception) { /* Never break vanilla Player.Update on a missing optional API. */ }
             }
