@@ -170,7 +170,7 @@ namespace Sirroh.SkillsAddon
                 byte[] bytes = new byte[input.Length];
                 input.Read(bytes, 0, bytes.Length);
                 _symbolTexture = new Texture2D(2,2,TextureFormat.RGBA32,false);
-                if (!ImageConversion.LoadImage(_symbolTexture,bytes,true)) return null;
+                if (!DecodePng(_symbolTexture,bytes)) return null;
                 _symbol = Sprite.Create(_symbolTexture,
                     new Rect(0,0,_symbolTexture.width,_symbolTexture.height),
                     new Vector2(.5f,.5f),100f);
