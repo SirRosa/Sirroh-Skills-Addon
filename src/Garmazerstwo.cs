@@ -191,6 +191,16 @@ namespace Sirroh.SkillsAddon
             // their separate cooking level and special effects also match.
             if (IsMaster(a) && IsMaster(b))
             {
+                // Do not silently merge custom items whose *other mod* data
+                // differs even if their Sirroh mastery profile is identical.
+                var otherA = a.m_customData.Where(p => p.Key != Key)
+                    .OrderBy(p => p.Key, StringComparer.Ordinal).ToArray();
+                var otherB = b.m_customData.Where(p => p.Key != Key)
+                    .OrderBy(p => p.Key, StringComparer.Ordinal).ToArray();
+                if (otherA.Length != otherB.Length) return false;
+                for (int i = 0; i < otherA.Length; ++i)
+                    if (otherA[i].Key != otherB[i].Key ||
+                        otherA[i].Value != otherB[i].Value) return false;
                 Food aRecord = Read(a), bRecord = Read(b);
                 return aRecord != null && bRecord != null &&
                        Serialize(aRecord) == Serialize(bRecord);
