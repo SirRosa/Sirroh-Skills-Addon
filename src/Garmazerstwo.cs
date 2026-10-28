@@ -162,8 +162,9 @@ namespace Sirroh.SkillsAddon
         internal static bool SameData(ItemDrop.ItemData a, ItemDrop.ItemData b)
         {
             if (a == null || b == null) return false;
-            var hasA = a.m_customData != null && a.m_customData.TryGetValue(Key, out string av);
-            var hasB = b.m_customData != null && b.m_customData.TryGetValue(Key, out string bv);
+            string av = null, bv = null;
+            var hasA = a.m_customData != null && a.m_customData.TryGetValue(Key, out av);
+            var hasB = b.m_customData != null && b.m_customData.TryGetValue(Key, out bv);
             return hasA == hasB && (!hasA || av == bv);
         }
 
@@ -288,12 +289,15 @@ namespace Sirroh.SkillsAddon
         [HarmonyPatch(typeof(InventoryGui), "DoCrafting")]
         private static class CraftScope
         {
+            private static readonly FieldInfo CraftRecipe = AccessTools.Field(typeof(InventoryGui), "m_craftRecipe");
+            private static readonly FieldInfo MultiCrafting = AccessTools.Field(typeof(InventoryGui), "m_multiCrafting");
+            private static readonly FieldInfo MultiCraftAmount = AccessTools.Field(typeof(InventoryGui), "m_multiCraftAmount");
             private static void Prefix(InventoryGui __instance)
             {
-                CookingCraft = Enabled?.Value == true && __instance?.m_craftRecipe?.m_item?.m_itemData != null &&
-                    IsFood(__instance.m_craftRecipe.m_item.m_itemData);
-                CookingAmount = __instance != null && __instance.m_multiCrafting ?
-                    Mathf.Max(1, __instance.m_multiCraftAmount) : 1;
+                Recipe recipe = __instance == null ? null : CraftRecipe?.GetValue(__instance) as Recipe;
+                CookingCraft = Enabled?.Value == true && IsFood(recipe?.m_item?.m_itemData);
+                CookingAmount = __instance != null && MultiCrafting?.GetValue(__instance) is bool multi && multi &&
+                    MultiCraftAmount?.GetValue(__instance) is int count ? Mathf.Max(1, count) : 1;
             }
             private static void Postfix() { CookingCraft = false; CookingAmount = 0; }
             private static Exception Finalizer(Exception __exception)
