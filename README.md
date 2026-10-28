@@ -1,5 +1,19 @@
 # Sirroh Skills [Addon]
 
+## 0.4.8 TEST — Mieszaj: hurtowe przyprawianie w otwartej skrzyni
+
+**Nowy przycisk Mieszaj** na bocznej drewnianej desce, pozycjonowany na wysokości panelu otwartej skrzyni. Deska korzysta z istniejącego zasobu `QolFavorites.WoodPanel` w Sirroh QOL (refleksja, bez zmian w QOL). Ikona kociołka `mix_kociolek.png` jest wczytywana z katalogu DLL; kompatybilny zasób osadzony w DLL także jest obsługiwany. Bez QOL pozostałe umiejętności Skills Addon działają niezależnie.
+
+**Selekcja:** każda potrawa otrzymuje ocenę aktualnych HP, staminy, Eitr, regeneracji zdrowia i niewielkiego współczynnika czasu działania. Posiłki uzyskujące co najmniej 85% oceny najlepszego kandydata zostają bazami; słabsze potrawy służą jako przyprawy. W obrębie jednej receptury słabszy wariant może być przyprawą dla innej receptury, lecz nigdy dla samego siebie.
+
+**Stacki:** jedna zużyta sztuka przyprawy wzmacnia cały wybrany stack bazowego dania. Algorytm rozdziela jednostki przypraw pomiędzy uprawnione grupy baz, zachowuje liczbę sztuk w bazowych stackach oraz obce metadane. Nie tworzy nowych stosów. Przydział i efekt pokazuje najpierw natywne potwierdzenie Tak/Nie, a PD naliczane są wyłącznie za faktycznie zużyte przyprawy.
+
+**Bezpieczeństwo:** przed zapisem ponowna weryfikacja wszystkich pozycji i `m_customData` w otwartej skrzyni, praw dostępu i wardów oraz własności ZDO. Wyniki przeliczane są *przed* mutacją ekwipunku. W razie błędu podejmowana jest próba rollbacku i osobne zgłoszenie jego ewentualnej niekompletności. Nie dotykamy skrzyń na statkach.
+
+**Nienaruszone:** ręczne przyprawianie drag/drop, 20% bazowej regeneracji HP przyprawy, limit 2× bazowej regeneracji dania, mechanika stacków 0.4.7, Kuźnictwo, ZenUI, Kolos, Zawadiaka i Łowca Głów, GUID-y oraz `main`.
+
+**Status:** kompilacja i testy CI potwierdzone na gałęzi testowej, **bez testów w uruchomionej grze i w multiplayerze**. Zrób kopię świata i postaci przed testowaniem. Przetestuj skrzynie normalne i PlanBuild, zmiany zawartości w trakcie okna potwierdzenia, przerwanie dostępu, dwa klienty jednocześnie, pojedynczą przyprawę + 50 posiłków, różne premie tej samej potrawy, QuickStack i Sort.
+
 ## 0.4.7 TEST — te same dania służą do stackowania, nie do przyprawiania
 
 Przeciągnięcie posiłku na **ten sam rodzaj posiłku** omija system przyprawiania (bez okna i bez zużywania dania). Wtedy standardowy ekwipunek Valheim obsługuje przenoszenie i łączenie stacków. Posiłki o **różnych zapisanych premiach Garmażerstwa** nadal nie są scalane: natywne łączenie takich stacków spowodowałoby utratę odrębnych statystyk. Można łączyć tylko zgodne stacki (ten sam rodzaj i te same zapisane bonusy); niezgodne pozostają osobno. Przyprawianie dwoma *różnymi* daniami działa jak w 0.4.6.
