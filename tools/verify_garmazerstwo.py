@@ -44,7 +44,7 @@ assert 'if (parts[0] == "v2")' in food
 assert 'return string.Join("|", new[] { "v3",' in food
 assert 'data.Spices' not in food + spices
 assert 'int count = Mathf.Min(dst.m_stack, Mathf.Min(src.m_stack, dragCount));' in spices
-assert 'dest.FindEmptySlot(false)' in spices
+assert 'TryFindFreeSlot(dest, out slot)' in spices
 assert 'b.Clone()' in spices
 assert 'dest.AddItem(seasoned, slot)' in spices
 assert 'b.m_stack -= n;' in spices
