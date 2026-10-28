@@ -24,6 +24,8 @@ namespace Sirroh.SkillsAddon
         private static Inventory sourceInventory, targetInventory;
         private static Vector2i sourcePos, targetPos;
         private static int amount;
+        private static int sourceStack, targetStack;
+        private static string sourceData, targetData;
         private static int pendingFrame;
         private static bool pending;
 
@@ -64,16 +66,17 @@ namespace Sirroh.SkillsAddon
 
             // This is a food-on-food gesture; consume the event even on invalid conditions.
             int dragCount = Convert.ToInt32(DragAmount.GetValue(gui));
-            int count = dst.m_stack;
-            if (dragCount < count || src.m_stack < count)
+            int count = Mathf.Min(dst.m_stack, Mathf.Min(src.m_stack, dragCount));
+            if (count < 1)
             {
-                Notify("Przyprawianie: przyprawy musi wystarczyć na cały stos. Rozdziel stosy.");
+                Notify("Brak posiłków do przyprawienia.");
                 return false;
             }
-            var record = Garmazerstwo.Default(dst);
-            if (record.Stars >= 5)
+            // If only part of the target stack is improved, the untouched
+            // remainder must stay at its original slot, with its original data.
+            if (count < dst.m_stack && !HasFreeSlot(dstInv))
             {
-                Notify("Posiłek ma już 5 gwiazdek.");
+                Notify("Przyprawianie: zwolnij jeden slot na nieulepszoną część stosu.");
                 return false;
             }
             if (!UnifiedPopup.IsAvailable() || UnifiedPopup.IsVisible())
@@ -84,6 +87,10 @@ namespace Sirroh.SkillsAddon
             source = src; sourceInventory = srcInv; sourcePos = src.m_gridPos;
             target = dst; targetInventory = dstInv; targetPos = dst.m_gridPos;
             amount = count;
+            sourceStack = src.m_stack;
+            targetStack = dst.m_stack;
+            sourceData = Fingerprint(src);
+            targetData = Fingerprint(dst);
             pending = true;
             pendingFrame = Time.frameCount;
             try
@@ -118,6 +125,8 @@ namespace Sirroh.SkillsAddon
             Inventory origin = sourceInventory, dest = targetInventory;
             Vector2i aPos = sourcePos, bPos = targetPos;
             int n = amount;
+            int expectedSource = sourceStack, expectedTarget = targetStack;
+            string expectedSourceData = sourceData, expectedTargetData = targetData;
             ClearPending();
             if (Player.m_localPlayer == null || a == null || b == null || origin == null ||
                 dest == null || a == b || n < 1 ||
@@ -125,7 +134,10 @@ namespace Sirroh.SkillsAddon
                 dest != Player.m_localPlayer.GetInventory() ||
                 !ReferenceEquals(origin.GetItemAt(aPos.x, aPos.y), a) ||
                 !ReferenceEquals(dest.GetItemAt(bPos.x, bPos.y), b) ||
-                a.m_stack < n || b.m_stack != n ||
+                a.m_stack != expectedSource || b.m_stack != expectedTarget ||
+                a.m_stack < n || b.m_stack < n ||
+                Fingerprint(a) != expectedSourceData ||
+                Fingerprint(b) != expectedTargetData ||
                 !Garmazerstwo.IsFood(a) || !Garmazerstwo.IsFood(b))
             {
                 Notify("Przyprawianie anulowane: zawartość ekwipunku uległa zmianie.");
@@ -134,21 +146,84 @@ namespace Sirroh.SkillsAddon
             var record = Garmazerstwo.Default(b);
             if (!Garmazerstwo.AddSpice(record, a, b, Garmazerstwo.SkillLevel(Player.m_localPlayer)))
             {
-                Notify("Przyprawianie anulowane: osiągnięto limit 5 gwiazdek.");
+                Notify("Nie udało się obliczyć przyprawienia. Nic nie zużyto.");
                 return;
             }
             string result = Garmazerstwo.Serialize(record);
-            // Never remove the ingredient until all validations and serialization succeed.
-            if (!origin.RemoveItem(a, n))
+            if (n == b.m_stack)
             {
-                Notify("Nie udało się zużyć przyprawy. Posiłek pozostał bez zmian.");
-                return;
+                // The entire target stack receives the same boost.
+                if (!origin.RemoveItem(a, n))
+                {
+                    Notify("Nie udało się zużyć przyprawy. Posiłek pozostał bez zmian.");
+                    return;
+                }
+                b.m_customData[Garmazerstwo.Key] = result;
             }
-            b.m_customData[Garmazerstwo.Key] = result;
+            else
+            {
+                // Native Inventory API: clone target (including metadata), place
+                // upgraded portion in an explicitly empty grid cell. Original B
+                // remains with its old stats and untouched count.
+                Vector2i slot = dest.FindEmptySlot(false);
+                if (!IsEmptySlot(dest, slot))
+                {
+                    Notify("Brak wolnego slotu na automatyczny podział stosu.");
+                    return;
+                }
+
+                ItemDrop.ItemData seasoned = b.Clone();
+                seasoned.m_stack = n;
+                seasoned.m_gridPos = slot;
+                seasoned.m_customData[Garmazerstwo.Key] = result;
+                // The ingredient is NOT consumed before a valid, separate
+                // stack exists; failure cannot turn the source into nothing.
+                bool inserted = dest.AddItem(seasoned, slot);
+                if (!inserted || !ReferenceEquals(dest.GetItemAt(slot.x, slot.y), seasoned))
+                {
+                    // Defensive cleanup if AddItem reported failure after placing.
+                    if (ReferenceEquals(dest.GetItemAt(slot.x, slot.y), seasoned))
+                        dest.RemoveItem(seasoned);
+                    Notify("Nie udało się wydzielić przyprawionego stosu. Nic nie zużyto.");
+                    return;
+                }
+
+                b.m_stack -= n;
+                if (!origin.RemoveItem(a, n))
+                {
+                    // Transaction rollback: restore original B and remove the
+                    // newly created stack; source A was not consumed.
+                    b.m_stack += n;
+                    dest.RemoveItem(seasoned);
+                    try { Changed?.Invoke(dest, new object[] { false, false }); }
+                    catch (Exception) { }
+                    Notify("Nie udało się zużyć przyprawy. Przywrócono poprzednie stosy.");
+                    return;
+                }
+            }
+
             try { Changed?.Invoke(dest, new object[] { false, false }); }
-            catch (Exception) { /* Serialized item metadata is already committed. */ }
+            catch (Exception) { /* The committed item data remains intact. */ }
             Garmazerstwo.AwardSpiceXp(n);
-            Notify("Przyprawiono " + n + " × posiłek. Gwiazdki: " + record.Stars + "/5.");
+            Notify("Przyprawiono " + n + " × posiłek.");
+        }
+
+        private static string Fingerprint(ItemDrop.ItemData item)
+        {
+            if (item?.m_customData == null) return null;
+            return item.m_customData.TryGetValue(Garmazerstwo.Key, out string data) ? data : null;
+        }
+
+        private static bool IsEmptySlot(Inventory inv, Vector2i slot)
+        {
+            return inv != null && slot.x >= 0 && slot.x < inv.GetWidth() &&
+                slot.y >= 0 && slot.y < inv.GetHeight() &&
+                inv.GetItemAt(slot.x, slot.y) == null;
+        }
+
+        private static bool HasFreeSlot(Inventory inv)
+        {
+            return inv != null && IsEmptySlot(inv, inv.FindEmptySlot(false));
         }
 
         private static void Cancel()
@@ -163,6 +238,8 @@ namespace Sirroh.SkillsAddon
             source = null; target = null;
             sourceInventory = null; targetInventory = null;
             amount = 0;
+            sourceStack = targetStack = 0;
+            sourceData = targetData = null;
         }
 
         private static void Notify(string text)
