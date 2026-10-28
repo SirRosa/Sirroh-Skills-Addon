@@ -203,6 +203,23 @@ foreach (var method in (invType?.Methods ?? Enumerable.Empty<Mono.Cecil.MethodDe
         Console.WriteLine("SEASON IL " + instruction);
     Console.WriteLine("SEASON ADDITEM IL END");
 }
+
+foreach (var name in new[] { "InventoryGui", "Container", "Inventory", "ZNetView" })
+{
+    var t = assembly.MainModule.Types.FirstOrDefault(x => x.Name == name);
+    if (t == null) continue;
+    foreach (var field in t.Fields.Where(x => x.Name.Contains("container") ||
+        x.Name.Contains("inventory") || x.Name.Contains("player") ||
+        x.Name.Contains("nview") || x.Name.Contains("save") || x.Name.Contains("inUse") ||
+        x.Name.Contains("m_items") || x.Name.Contains("m_gui")))
+        Console.WriteLine("MIX FIELD " + name + " " + field.Name + " : " + field.FieldType.FullName +
+            " public=" + field.IsPublic);
+    foreach (var m in t.Methods.Where(x =>
+        new [] { "Save", "Changed", "CheckAccess", "ClaimOwnership", "IsOwner", "RemoveItem", "GetAllItems", "IsInUse" }.Contains(x.Name)))
+        Console.WriteLine("MIX METHOD " + name + "." + m.Name + "(" +
+            string.Join(",",m.Parameters.Select(p=>p.ParameterType.FullName+" "+p.Name)) + ")" +
+            " return="+m.ReturnType.FullName+" public="+m.IsPublic);
+}
 // Game-version diagnostic: read the currently fetched Steam dedicated server's
 // managed assembly metadata without asserting that it is a tested 1.0.21 client.
 foreach (var vt in assembly.MainModule.Types.Where(t =>
