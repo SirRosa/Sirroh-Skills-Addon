@@ -19,6 +19,11 @@ namespace Sirroh.SkillsAddon
             "SetupDragItem", new[] { typeof(ItemDrop.ItemData), typeof(Inventory), typeof(int) });
         private static readonly MethodInfo Changed = AccessTools.Method(typeof(Inventory),
             "Changed", new[] { typeof(bool), typeof(bool) });
+        // Private in Valheim 1.0.21; unlike AddItem(ItemData,Vector2i),
+        // this overload respects the exact slot and never searches other stacks.
+        private static readonly MethodInfo AddItemAt = AccessTools.Method(typeof(Inventory),
+            "AddItem", new[] { typeof(ItemDrop.ItemData), typeof(int), typeof(int),
+                typeof(int), typeof(bool) });
 
         private static ItemDrop.ItemData source, target;
         private static Inventory sourceInventory, targetInventory;
@@ -33,7 +38,8 @@ namespace Sirroh.SkillsAddon
         {
             var method = AccessTools.Method(typeof(InventoryGrid), "OnLeftDown");
             if (method == null || DragItem == null || DragInventory == null ||
-                DragAmount == null || GridInventory == null || ButtonPos == null || ClearDrag == null)
+                DragAmount == null || GridInventory == null || ButtonPos == null ||
+                ClearDrag == null || AddItemAt == null)
             {
                 Plugin.Instance.Warning("Garmażerstwo: API przeciągania niezgodne; wyłączono przyprawianie.");
                 return;
@@ -182,7 +188,23 @@ namespace Sirroh.SkillsAddon
                 // Verified against Valheim 1.0.21 IL: it creates another clone
                 // in the inventory, so do NOT test reference equality with the
                 // supplied (consumed) ItemData object.
-                bool inserted = dest.AddItem(seasoned, n, slot.x, slot.y, false);
+                bool inserted;
+                try
+                {
+                    inserted = (bool)AddItemAt.Invoke(dest,
+                        new object[] { seasoned, n, slot.x, slot.y, false });
+                }
+                catch (Exception e)
+                {
+                    // Never consume ingredients if a future game update changes
+                    // the explicit-position inventory API.
+                    var possiblyPlaced = dest.GetItemAt(slot.x, slot.y);
+                    if (possiblyPlaced != null && Fingerprint(possiblyPlaced) == result)
+                        dest.RemoveItem(possiblyPlaced);
+                    Plugin.Instance.Warning("Garmażerstwo: AddItemAt: " + e.GetType().Name);
+                    Notify("Nie udało się podzielić stosu. Nic nie zużyto.");
+                    return;
+                }
                 ItemDrop.ItemData placed = dest.GetItemAt(slot.x, slot.y);
                 if (!inserted || placed == null || placed.m_stack != n ||
                     Fingerprint(placed) != result)
