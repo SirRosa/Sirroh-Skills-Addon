@@ -42,15 +42,15 @@ namespace Sirroh.SkillsAddon
                         var obj = new GameObject(ObjectName, typeof(RectTransform), typeof(TextMeshProUGUI));
                         obj.transform.SetParent(anchor.transform, false);
                         var rect = obj.GetComponent<RectTransform>();
-                        rect.anchorMin = new Vector2(.05f, .72f);
-                        rect.anchorMax = new Vector2(.96f, 1f);
+                        rect.anchorMin = new Vector2(.03f, .72f);
+                        rect.anchorMax = new Vector2(.73f, 1f);
                         rect.offsetMin = rect.offsetMax = Vector2.zero;
                         text = obj.GetComponent<TextMeshProUGUI>();
                         text.raycastTarget = false;
                         text.textWrappingMode = TextWrappingModes.NoWrap;
-                        text.fontSize = 15f;
+                        text.fontSize = 14f;
                         text.fontStyle = FontStyles.Bold;
-                        text.alignment = TextAlignmentOptions.TopRight;
+                        text.alignment = TextAlignmentOptions.TopLeft;
                         text.color = new Color(1f, .79f, .18f, 1f);
                         text.overflowMode = TextOverflowModes.Overflow;
                     }
