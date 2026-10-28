@@ -20,7 +20,7 @@ namespace Sirroh.SkillsAddon
     {
         internal const string Guid = "sirroh.skills.addon";
         internal const string OverhaulGuid = "sirro.valheim.pracafizyczna";
-        internal const string Version = "0.4.7";
+        internal const string Version = "0.4.8";
         internal static Plugin Instance;
         internal static Skills.SkillType SlayerType;
         internal static Skills.SkillType BrawlerType;
@@ -77,6 +77,9 @@ namespace Sirroh.SkillsAddon
             BlacksmithingBridge.Install(harmony);
             BlacksmithingPolish.Install(harmony);
             Garmazerstwo.Install(harmony);
+            // Isolate the experimental chest UI from all existing skills.
+            try { GarmazerstwoMixUI.Install(harmony); }
+            catch (Exception e) { Warning("Mieszaj UI unavailable: " + e.Message); }
             BlacksmithingBridge.Report();
             LogInfo("Kolos, Zawadiaka, Łowca Głów and Garmażerstwo ready; XP stays in Sirroh Overhaul skill pipeline.");
         }
@@ -94,6 +97,8 @@ namespace Sirroh.SkillsAddon
         {
             BlacksmithingPolish.Tick();
             GarmazerstwoSpicing.Tick();
+            GarmazerstwoMixing.Tick();
+            GarmazerstwoMixUI.Tick();
             ZenUiCompatibility.TryInstall(harmony);
         }
 
@@ -102,6 +107,8 @@ namespace Sirroh.SkillsAddon
             harmony?.UnpatchSelf();
             SlayerTrophies.Clear();
             GarmazerstwoSpicing.Shutdown();
+            GarmazerstwoMixUI.Shutdown();
+            GarmazerstwoMixing.Shutdown();
             ZenUiCompatibility.Reset();
             BlacksmithingBridge.Clear();
             if (ReferenceEquals(Instance, this)) Instance = null;
