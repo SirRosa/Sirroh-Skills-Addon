@@ -39,7 +39,7 @@ assert 'data.Spices' not in food + spices
 assert 'record.Stars >= 5' in spices
 assert 'Garmazerstwo.AddSpice(record, a, b,' in spices
 assert 'Garmazerstwo.Serialize(record)' in spices
-assert 'float percent = .05f + .05f * Mathf.Clamp01(level / 100f);' in food
+assert 'float percent = .05f + .05f * Mathf.Clamp01(skillLevel / 100f);' in food
 assert 'Mathf.Max(1f, Mathf.Round(' in food
 assert 'lines[i] = ReplaceFirstValue(lines[i], hp)' in food
 assert 'lines[i] = ReplaceFirstValue(lines[i], stamina)' in food
