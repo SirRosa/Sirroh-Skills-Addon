@@ -46,7 +46,7 @@ assert 'data.Spices' not in food + spices
 assert 'int count = Mathf.Min(dst.m_stack, Mathf.Min(src.m_stack, dragCount));' in spices
 assert 'TryFindFreeSlot(dest, out slot)' in spices
 assert 'b.Clone()' in spices
-assert 'dest.AddItem(seasoned, n, slot.x, slot.y, false)' in spices
+assert 'AddItemAt.Invoke(dest' in spices
 assert 'b.m_stack -= n;' in spices
 assert 'dest.RemoveItem(placed);' in spices
 assert 'Fingerprint(a) != expectedSourceData' in spices
