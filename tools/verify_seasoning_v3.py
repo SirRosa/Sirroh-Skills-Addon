@@ -29,6 +29,15 @@ assert 'dest.RemoveItem(placed)' in spice
 assert 'b.m_stack += n;' in spice
 assert 'Fingerprint(a) != expectedSourceData' in spice
 assert 'Fingerprint(b) != expectedTargetData' in spice
+assert 'string.Equals(Garmazerstwo.Prefab(src), Garmazerstwo.Prefab(dst),' in spice
+assert 'StringComparison.Ordinal)) return true;' in spice
+# The same-dish bypass must happen BEFORE any spice count, split or popup checks.
+bypass=spice.index('string.Equals(Garmazerstwo.Prefab(src), Garmazerstwo.Prefab(dst),')
+assert bypass < spice.index('int dragCount =') < spice.index('UnifiedPopup.Push(')
+inventory=(root/"GarmazerstwoInventory.cs").read_text(encoding="utf-8")
+assert '!Garmazerstwo.SameData(__instance, __0)' in inventory
+assert '!Garmazerstwo.SameData(incoming, __result)' in inventory
+assert 'Garmazerstwo.AwardSpiceXp(n);' in spice
 def seasoning(source_base, target_base, previous_extra=0):
     return min(max(0,target_base),max(0,previous_extra)+.2*max(0,source_base))
 for src,expected in [(1,.2),(2,.4),(10,2)]:
