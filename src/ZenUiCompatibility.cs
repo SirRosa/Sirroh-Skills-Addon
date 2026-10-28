@@ -97,9 +97,12 @@ namespace Sirroh.SkillsAddon
             float foodStamina = ReadShared(sharedType, shared, "m_foodStamina");
             float foodEitr = ReadShared(sharedType, shared, "m_foodEitr");
             if (foodHp <= 0f && foodStamina <= 0f && foodEitr <= 0f) return false;
-            hp = foodHp * (1f + data.CookPercent) + data.Hp;
-            stamina = foodStamina * (1f + data.CookPercent) + data.Stamina;
-            eitr = foodEitr * (1f + data.CookPercent) + data.Eitr;
+            hp = foodHp * (1f + Mathf.Clamp01(data.CookPercent)) +
+                Mathf.Clamp(data.Hp, 0f, Garmazerstwo.SpiceLimit(foodHp));
+            stamina = foodStamina * (1f + Mathf.Clamp01(data.CookPercent)) +
+                Mathf.Clamp(data.Stamina, 0f, Garmazerstwo.SpiceLimit(foodStamina));
+            eitr = foodEitr * (1f + Mathf.Clamp01(data.CookPercent)) +
+                Mathf.Clamp(data.Eitr, 0f, Garmazerstwo.SpiceLimit(foodEitr));
             return true;
         }
 
