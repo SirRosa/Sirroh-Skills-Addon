@@ -56,6 +56,20 @@ namespace Sirroh.SkillsAddon
             }
         }
 
+        // Global, narrowly scoped safeguard: vanilla drag/drop and QOL sorting use
+        // IsSameType, which otherwise ignores m_customData and destroys per-meal rolls.
+        [HarmonyPatch(typeof(ItemDrop.ItemData), "IsSameType", new[] { typeof(ItemDrop.ItemData) })]
+        private static class GuardFoodIdentity
+        {
+            private static void Postfix(ItemDrop.ItemData __instance, ItemDrop.ItemData other,
+                ref bool __result)
+            {
+                if (__result && Garmazerstwo.IsFood(__instance) && Garmazerstwo.IsFood(other) &&
+                    !Garmazerstwo.SameData(__instance, other))
+                    __result = false;
+            }
+        }
+
         [HarmonyPatch]
         private static class NoMixedStacks
         {
@@ -65,8 +79,15 @@ namespace Sirroh.SkillsAddon
                                 m.ReturnType == typeof(ItemDrop.ItemData));
             private static void Postfix(ref ItemDrop.ItemData __result)
             {
-                if (incoming == null || __result == null || !Garmazerstwo.IsFood(incoming))
+                if (__result == null) return;
+                // Crafting through the AddItem(string...) overload creates a temporary item
+                // internally. Never merge into a pre-existing stack before its roll is saved.
+                if (incoming == null && Garmazerstwo.CookingCraft && Garmazerstwo.IsFood(__result))
+                {
+                    __result = null;
                     return;
+                }
+                if (incoming == null || !Garmazerstwo.IsFood(incoming)) return;
                 if (!Garmazerstwo.SameData(incoming, __result))
                     __result = null;
             }
