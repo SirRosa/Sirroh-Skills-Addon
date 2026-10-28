@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
+using HarmonyLib;
 
 namespace Sirroh.SkillsAddon
 {
@@ -20,7 +21,9 @@ namespace Sirroh.SkillsAddon
                         offset += count;
                     if (offset != bytes.Length) return fallback();
                     var texture = new Texture2D(96, 96, TextureFormat.RGBA32, false);
-                    if (!ImageConversion.LoadImage(texture, bytes)) return fallback();
+                    Type imageType = AccessTools.TypeByName("UnityEngine.ImageConversion");
+                    var decode = imageType == null ? null : AccessTools.Method(imageType, "LoadImage", new[] { typeof(Texture2D), typeof(byte[]) });
+                    if (decode == null || !(bool)decode.Invoke(null, new object[] { texture, bytes })) return fallback();
                     texture.filterMode = FilterMode.Point;
                     return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height),
                         new Vector2(.5f, .5f), 100f);
