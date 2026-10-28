@@ -17,12 +17,13 @@ csproj = Path("SirrohSkillsAddon.csproj").read_text(encoding="utf-8")
 workflow = Path(".github/workflows/build.yml").read_text(encoding="utf-8")
 manifest = json.loads(Path("manifest.json").read_text(encoding="utf-8"))
 
-assert manifest["version_number"] == "0.4.4"
-assert 'internal const string Version = "0.4.4"' in plugin
+assert manifest["version_number"] == "0.4.5"
+assert 'internal const string Version = "0.4.5"' in plugin
 assert 'Identifier = Guid + ".garmazerstwo"' in plugin
 assert 'Identifier = "neithar.Slayer"' in plugin
 assert 'Identifier = Guid + ".zawadiaka"' in plugin
 assert "Garmazerstwo.Install(harmony)" in plugin
+assert "ZenUiCompatibility.TryInstall(harmony)" in plugin
 assert "BlacksmithingPolish.Install(harmony)" in plugin
 assert 'if (data == null || data.Stars >= 5 || !IsFood(source)) return false;' in food
 assert 'data.Stars++;' in food
@@ -90,7 +91,7 @@ for icon in ["bron_dwureczna", "lowca_glow", "garmazerstwo", "kuznictwo"]:
     assert f'sirroh.icons.{icon}.png' in icons
 assert "branches: [main, 'test/**']" in workflow
 assert "if: github.ref == 'refs/heads/main'" in workflow
-print("PASS: 0.4.4 aggregated v2 seasoning, v1 migration, refreshed skill level, compact native tooltip, inventory star count.")
+print("PASS: 0.4.5 aggregated v2 seasoning, v1 migration, refreshed skill level, compact native tooltip, inventory star count.")
 
 # Packaging identity must not break existing Thunderstore updates.
 import struct

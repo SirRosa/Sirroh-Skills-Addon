@@ -20,7 +20,7 @@ namespace Sirroh.SkillsAddon
     {
         internal const string Guid = "sirroh.skills.addon";
         internal const string OverhaulGuid = "sirro.valheim.pracafizyczna";
-        internal const string Version = "0.4.4";
+        internal const string Version = "0.4.5";
         internal static Plugin Instance;
         internal static Skills.SkillType SlayerType;
         internal static Skills.SkillType BrawlerType;
@@ -87,12 +87,14 @@ namespace Sirroh.SkillsAddon
             BlacksmithingBridge.Initialize(Config);
             BlacksmithingBridge.Install(harmony);
             BlacksmithingPolish.Install(harmony);
+            ZenUiCompatibility.TryInstall(harmony);
         }
 
         private void Update()
         {
             BlacksmithingPolish.Tick();
             GarmazerstwoSpicing.Tick();
+            ZenUiCompatibility.TryInstall(harmony);
         }
 
         private void OnDestroy()
@@ -100,6 +102,7 @@ namespace Sirroh.SkillsAddon
             harmony?.UnpatchSelf();
             SlayerTrophies.Clear();
             GarmazerstwoSpicing.Shutdown();
+            ZenUiCompatibility.Reset();
             BlacksmithingBridge.Clear();
             if (ReferenceEquals(Instance, this)) Instance = null;
         }

@@ -38,6 +38,6 @@ assert "Masterwork crafting created an extra item!" in translation
 assert "<Description>k__BackingField" in translation
 assert 'definition.Section + "|" + definition.Key' in translation
 assert "BlacksmithingPolish.Install(harmony)" in plugin
-assert manifest["version_number"] == "0.4.4"
-assert "Sirroh_Skills_Addon-v0.4.4" in workflow
-print("PASS: trophy-only HUD, preserved counters, all 60 Blacksmithing Polish settings, v0.4.4")
+assert manifest["version_number"] == "0.4.5"
+assert "Sirroh_Skills_Addon-v0.4.5" in workflow
+print("PASS: trophy-only HUD, preserved counters, all 60 Blacksmithing Polish settings, v0.4.5")

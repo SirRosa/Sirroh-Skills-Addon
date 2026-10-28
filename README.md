@@ -1,6 +1,11 @@
 # Sirroh Skills [Addon]
 
-## Wersja testowa 0.4.4 — naprawa istniejących wartości jedzenia i natywnego licznika jakości
+## Wersja testowa 0.4.5 — opcjonalna kompatybilność z ZenUI
+
+**ZenUI 1.9.3 (ZenDragon.ZenUI):** po wykryciu moda Sirroh Skills automatycznie dołącza izolowany postfix do `ZenUI.Section.TooltipSummary.GetTooltipSummary`. ZenUI domyślnie generuje uproszczone ikony HP/staminy/Eitr z `m_shared`, ignorując premie unikatowego jedzenia. Adapter modyfikuje wyłącznie liczby w gotowych `<nobr>` z ikonami 💖 💪 ✨, bazując na `m_customData` i istniejącej metodzie Garmażerstwa; jeśli przyprawienie wprowadziło nową statystykę, doda brakującą ikonę. Pełne tooltipy, sposób gotowania, przyprawiania, stacki, statystyki rzeczywiste, jakość i globalny `m_shared` pozostają nietknięte. ZenUI jest **opcjonalny** i nie jest wymaganą zależnością. Dla zmienionego ZenUI lub braku wymaganej metody integracja jest wyłączana z ostrzeżeniem, bez zmiany pozostałych skilli. Nie testowano renderowania w uruchomionym kliencie.
+
+### Poprzednia poprawka 0.4.4 — naprawa oryginalnych wartości jedzenia i natywnego licznika jakości
+
 
 **Naprawa UI Valheim 1.0.21:** silnik generuje najpierw klucze lokalizacji jedzenia (`$item_food_health`, `$item_food_stamina`, `$item_food_eitr`, `$item_food_regen`), a dopiero później wyświetla polskie etykiety. Poprawione wartości wpisywane są bezpośrednio w te cztery oryginalne linie. Jedynym osobnym dopiskiem pozostaje krótki poziom Garmażerstwa i ewentualny buff od poziomu 75. **Wskaźnik 1–5 przyprawień wykorzystuje istniejącą cyfrę jakości przedmiotu na ikonie**, bez dodatkowych warstw UI i bez modyfikacji właściwego poziomu jakości Valheim. Wartości oraz liczba przypraw nie były utracone w 0.4.3; naprawa dotyczy ich prezentacji.
 
