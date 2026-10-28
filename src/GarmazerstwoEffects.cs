@@ -262,10 +262,10 @@ namespace Sirroh.SkillsAddon
             var bodyField = AccessTools.Field(typeof(Character), "m_body");
             var body = bodyField?.GetValue(__instance) as Rigidbody ??
                        __instance.GetComponent<Rigidbody>();
-            if (body == null || body.velocity.y <= 0f) return;
-            Vector3 velocity = body.velocity;
+            if (body == null || body.linearVelocity.y <= 0f) return;
+            Vector3 velocity = body.linearVelocity;
             velocity.y *= Mathf.Sqrt(1f + value); // Height ~ squared jump velocity.
-            body.velocity = velocity;
+            body.linearVelocity = velocity;
         }
 
         // Vanilla calls this only when the creature is fed, calm and owned by this client.
