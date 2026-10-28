@@ -253,7 +253,7 @@ namespace Sirroh.SkillsAddon
             regenEitr = record?.EitrRegen ?? 0f;
         }
 
-        internal static bool AddSpice(Food data, ItemDrop.ItemData source, float skillLevel)
+        internal static bool AddSpice(Food data, ItemDrop.ItemData source, ItemDrop.ItemData target, float skillLevel)
         {
             if (data == null || data.Stars >= 5 || !IsFood(source)) return false;
             // Read the *fully prepared* source. A five-star ingredient adds one
@@ -282,7 +282,7 @@ namespace Sirroh.SkillsAddon
             data.CookPercent = CookPercentage(skillLevel);
             // Do not reroll an existing special effect on every seasoning.
             if (string.IsNullOrEmpty(data.Buff) && skillLevel >= 75f)
-                data.Buff = RollBuff(source, out data.BuffValue);
+                data.Buff = RollBuff(target, out data.BuffValue);
             return true;
         }
 
