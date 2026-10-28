@@ -43,6 +43,7 @@ namespace Sirroh.SkillsAddon
             internal readonly List<ItemDrop.ItemData> Targets = new List<ItemDrop.ItemData>();
             internal readonly List<ItemDrop.ItemData> Spices = new List<ItemDrop.ItemData>();
             internal string Result;
+            internal Garmazerstwo.Food Prepared;
             internal int Count => Targets.Sum(t => t.m_stack);
         }
 
@@ -63,7 +64,9 @@ namespace Sirroh.SkillsAddon
             internal readonly Dictionary<ItemDrop.ItemData,int> Consumed =
                 new Dictionary<ItemDrop.ItemData,int>();
             internal int ConsumedCount;
-            internal int BaseCount => Bases.Sum(g => g.Count);
+            internal int BaseCount => Bases.Where(g => g.Spices.Count > 0)
+                .Sum(g => g.Targets.Sum(item => item.m_stack -
+                    (Consumed.TryGetValue(item, out int used) ? used : 0)));
         }
 
         private static bool _pending;
@@ -183,88 +186,128 @@ namespace Sirroh.SkillsAddon
             return (hp + stamina + 1.5f * eitr + 4f * hpRegen) * durationFactor;
         }
 
+        // Compile a complete, non-destructive transaction preview. No item is
+        // consumed unless its effect *actually* changes an eligible base.
         internal static Plan Analyze(Container chest)
         {
             var inv = Contents(chest);
-            if (inv == null) return null;
-            var items = inv.GetAllItems().Where(item =>
-                item != null && item.m_stack > 0 && !item.m_equipped &&
-                Garmazerstwo.IsFood(item)).ToList();
+            if (inv == null || Player.m_localPlayer == null) return null;
+            var items = inv.GetAllItems().Where(i =>
+                i != null && i.m_stack > 0 && !i.m_equipped &&
+                Garmazerstwo.IsFood(i)).ToList();
             if (items.Count < 2) return null;
 
-            // Score by food prefab: already-seasoned variants of the same
-            // dish remain individual base groups but do not inflate the count
-            // of distinct meal types.
-            var ranked = items.GroupBy(Garmazerstwo.Prefab)
+            var plan = new Plan { Container = chest, Inventory = inv,
+                Fingerprint = InventoryFingerprint(inv) };
+            var remaining = items.ToDictionary(item => item, item => item.m_stack);
+            // Mastered meals are never destroyed as ingredients nor selected
+            // for further seasoning, including legacy over-cap 0.4.8 meals.
+            var eligible = items.Where(i => !Garmazerstwo.IsMaster(i)).ToList();
+            if (eligible.Count < 2) return null;
+            var ranked = eligible.GroupBy(Garmazerstwo.Prefab)
                 .Select(g => new { Prefab = g.Key, Score = g.Max(Value) })
                 .OrderByDescending(g => g.Score).ThenBy(g => g.Prefab,
                     StringComparer.Ordinal).ToList();
             if (ranked.Count < 2 || ranked[0].Score <= 0f) return null;
             float minimum = ranked[0].Score * RelativeBaseThreshold;
-            var selected = new HashSet<string>(
-                ranked.Where(g => g.Score >= minimum).Select(g => g.Prefab),
-                StringComparer.Ordinal);
+            // Preserve near-equal elite meal groups from the original v0.4.8
+            // design; never sacrifice them as low-quality spices.
+            foreach (var item in eligible.Where(i => Value(i) >= minimum)
+                .OrderByDescending(Value).ThenBy(Garmazerstwo.Prefab, StringComparer.Ordinal)
+                .ThenBy(i => i.m_gridPos.y).ThenBy(i => i.m_gridPos.x))
+                AddBaseGroup(plan, eligible, item, remaining);
+            if (plan.Bases.Count == 0) return null;
 
-            var plan = new Plan { Container = chest, Inventory = inv,
-                Fingerprint = InventoryFingerprint(inv) };
-            var baseItems = new HashSet<ItemDrop.ItemData>(
-                items.Where(i => selected.Contains(Garmazerstwo.Prefab(i)) &&
-                                 Value(i) >= minimum));
-            foreach (var item in baseItems)
+            int attempts = 0;
+            int limit = eligible.Sum(i => i.m_stack) + eligible.Count;
+            while (attempts++ < limit)
             {
-                string prefab = Garmazerstwo.Prefab(item);
-                string signature = DataSignature(item);
-                var group = plan.Bases.FirstOrDefault(g =>
-                    g.Prefab == prefab && g.DataSignature == signature);
-                if (group == null)
-                {
-                    group = new Group { Prefab = prefab,
-                        Name = Localization.instance != null
-                            ? Localization.instance.Localize(item.m_shared.m_name)
-                            : item.m_shared.m_name,
-                        DataSignature = signature,
-                        Value = Value(item) };
-                    plan.Bases.Add(group);
-                }
-                group.Targets.Add(item);
-            }
-            plan.Bases.Sort((a,b) =>
-            {
-                int byValue = b.Value.CompareTo(a.Value);
-                return byValue != 0 ? byValue :
-                    string.CompareOrdinal(a.Prefab + a.DataSignature,
-                                           b.Prefab + b.DataSignature);
-            });
-            var ingredients = items.Where(i => !baseItems.Contains(i))
-                .OrderBy(Garmazerstwo.Prefab, StringComparer.Ordinal)
-                .ThenBy(i => i.m_gridPos.y).ThenBy(i => i.m_gridPos.x)
-                .ToList();
+                var sources = eligible.Where(i => remaining[i] > 0 &&
+                    !plan.Bases.Any(g => g.Targets.Contains(i)))
+                    .OrderBy(Value)
+                    .ThenBy(Garmazerstwo.Prefab, StringComparer.Ordinal)
+                    .ThenBy(i => i.m_gridPos.y).ThenBy(i => i.m_gridPos.x).ToList();
 
-            int index = 0;
-            foreach (var source in ingredients)
-            {
-                for (int unit = 0; unit < source.m_stack; unit++)
+                bool applied = false;
+                // Fair distribution while groups are in the same tier; after a
+                // group reaches Master, selection automatically moves onward.
+                foreach (var target in plan.Bases
+                    .Where(g => g.Prepared != null &&
+                        !Garmazerstwo.IsMaster(g.Prepared, g.Targets[0]))
+                    .OrderBy(g => g.Spices.Count)
+                    .ThenByDescending(g => g.Value)
+                    .ThenBy(g => g.Prefab, StringComparer.Ordinal))
                 {
-                    // A lower-value variant of a selected recipe can season
-                    // another valuable recipe, but never the SAME food prefab.
-                    Group target = null;
-                    for (int offset = 0; offset < plan.Bases.Count; offset++)
+                    foreach (var source in sources)
                     {
-                        int candidate = (index + offset) % plan.Bases.Count;
-                        if (plan.Bases[candidate].Prefab == Garmazerstwo.Prefab(source))
+                        if (target.Prefab == Garmazerstwo.Prefab(source))
+                            continue; // Same dish is never its own spice.
+                        var simulated = Garmazerstwo.Parse(
+                            Garmazerstwo.Serialize(target.Prepared));
+                        if (simulated == null ||
+                            !Garmazerstwo.AddSpice(simulated, source,
+                                target.Targets[0],
+                                Garmazerstwo.SkillLevel(Player.m_localPlayer)))
                             continue;
-                        target = plan.Bases[candidate];
-                        index = candidate + 1;
+                        target.Prepared = simulated;
+                        target.Spices.Add(source);
+                        target.Result = Garmazerstwo.Serialize(simulated);
+                        remaining[source]--;
+                        if (!plan.Consumed.ContainsKey(source))
+                            plan.Consumed[source] = 0;
+                        plan.Consumed[source]++;
+                        plan.ConsumedCount++;
+                        applied = true;
                         break;
                     }
-                    if (target == null) break;
-                    target.Spices.Add(source);
-                    if (!plan.Consumed.ContainsKey(source)) plan.Consumed[source] = 0;
-                    plan.Consumed[source]++;
-                    plan.ConsumedCount++;
+                    if (applied) break;
                 }
+                if (applied) continue;
+
+                // No more usable seasoning for the current tier. Promote the
+                // strongest remaining dish to the next base, even if it used
+                // to be below the 85% threshold. Never consume a spice whose
+                // contribution is 0 due to a full stat cap.
+                var next = sources.OrderByDescending(Value)
+                    .ThenBy(Garmazerstwo.Prefab, StringComparer.Ordinal)
+                    .FirstOrDefault(i => sources.Any(other =>
+                        Garmazerstwo.Prefab(other) != Garmazerstwo.Prefab(i)));
+                if (next == null) break;
+                int previous = plan.Bases.Count;
+                AddBaseGroup(plan, eligible, next, remaining);
+                if (plan.Bases.Count == previous) break;
             }
-            return plan.Bases.Count > 0 && plan.ConsumedCount > 0 ? plan : null;
+            // All result metadata is calculated before showing Yes/No. The
+            // execution phase only revalidates and commits this exact plan.
+            return plan.ConsumedCount > 0 ? plan : null;
+        }
+
+        private static void AddBaseGroup(Plan plan, List<ItemDrop.ItemData> items,
+            ItemDrop.ItemData exemplar, Dictionary<ItemDrop.ItemData,int> remaining)
+        {
+            if (exemplar == null || remaining[exemplar] < 1 ||
+                Garmazerstwo.IsMaster(exemplar)) return;
+            string prefab = Garmazerstwo.Prefab(exemplar);
+            string signature = DataSignature(exemplar);
+            if (plan.Bases.Any(g => g.Prefab == prefab && g.DataSignature == signature))
+                return;
+            var group = new Group
+            {
+                Prefab = prefab,
+                DataSignature = signature,
+                Name = Localization.instance != null
+                    ? Localization.instance.Localize(exemplar.m_shared.m_name)
+                    : exemplar.m_shared.m_name,
+                Value = Value(exemplar),
+                Prepared = Garmazerstwo.Default(exemplar)
+            };
+            // Group only identical metadata. A partly consumed source stack
+            // can become a new base with its remaining units intact.
+            group.Targets.AddRange(items.Where(i =>
+                remaining[i] > 0 && Garmazerstwo.Prefab(i) == prefab &&
+                DataSignature(i) == signature));
+            if (group.Targets.Count > 0)
+                plan.Bases.Add(group);
         }
 
         private static void Message(string message)
@@ -289,12 +332,13 @@ namespace Sirroh.SkillsAddon
                 Message("Mieszaj: brak odpowiednio słabych potraw do wykorzystania jako przyprawy.");
                 return;
             }
-            string names = string.Join(", ", plan.Bases
+            string names = string.Join(", ", plan.Bases.Where(g => g.Spices.Count > 0)
                 .GroupBy(g => g.Prefab)
                 .Select(g =>
                     g.Sum(v => v.Count) + "× " + g.First().Name)
                 .Take(6).ToArray());
-            if (plan.Bases.Select(g=>g.Prefab).Distinct().Count() > 6)
+            if (plan.Bases.Where(g => g.Spices.Count > 0)
+                .Select(g=>g.Prefab).Distinct().Count() > 6)
                 names += " i pozostałe";
             _pending = true;
             _pendingPlan = plan;
@@ -364,19 +408,12 @@ namespace Sirroh.SkillsAddon
                 }
 
                 // Build every result in memory before touching the inventory.
-                float skillLevel = Garmazerstwo.SkillLevel(Player.m_localPlayer);
-                foreach (var group in plan.Bases)
-                {
-                    var exemplar = group.Targets[0];
-                    var record = Garmazerstwo.Default(exemplar);
-                    foreach (var ingredient in group.Spices)
-                        if (!Garmazerstwo.AddSpice(record, ingredient, exemplar, skillLevel))
-                        {
-                            Message("Mieszaj: nie udało się przeliczyć potrawy.");
-                            yield break;
-                        }
-                    group.Result = Garmazerstwo.Serialize(record);
-                }
+                foreach (var group in plan.Bases.Where(g => g.Spices.Count > 0))
+                    if (string.IsNullOrEmpty(group.Result))
+                    {
+                        Message("Mieszaj: niekompletny plan transakcji.");
+                        yield break;
+                    }
                 if (!Revalidate(plan))
                 {
                     Message("Mieszaj: zawartość skrzyni uległa zmianie.");
@@ -387,13 +424,14 @@ namespace Sirroh.SkillsAddon
                 // any new stack on the successful path: only metadata of the
                 // existing base stacks changes and ingredients are removed.
                 var backups = plan.Consumed.Keys.Concat(
-                    plan.Bases.SelectMany(g=>g.Targets)).Distinct().Select(item =>
+                    plan.Bases.Where(g => g.Spices.Count > 0)
+                        .SelectMany(g=>g.Targets)).Distinct().Select(item =>
                     new Snapshot { Item = item, Backup = item.Clone(),
                         Stack = item.m_stack, Position = item.m_gridPos }).ToList();
                 bool success = false;
                 try
                 {
-                    foreach (var group in plan.Bases)
+                    foreach (var group in plan.Bases.Where(g => g.Spices.Count > 0))
                         foreach (var item in group.Targets)
                         {
                             if (item.m_customData == null)
