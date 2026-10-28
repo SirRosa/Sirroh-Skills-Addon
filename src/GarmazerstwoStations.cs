@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using HarmonyLib;
 
 namespace Sirroh.SkillsAddon
@@ -8,14 +9,24 @@ namespace Sirroh.SkillsAddon
     internal static class GarmazerstwoStations
     {
         [ThreadStatic] private static bool collecting;
+        private static readonly MethodInfo Slot = AccessTools.Method(typeof(CookingStation), "GetSlot");
+        private static readonly MethodInfo Done = AccessTools.Method(typeof(CookingStation), "IsItemDone");
         private static bool CompletedFood(CookingStation station)
         {
-            if (station?.m_slots == null) return false;
+            if (station?.m_slots == null || Slot == null || Done == null) return false;
             for (int i = 0; i < station.m_slots.Length; ++i)
             {
-                station.GetSlot(i, out string name, out float _, out CookingStation.Status _, out bool _);
-                if (string.IsNullOrEmpty(name) || !station.IsItemDone(name)) continue;
-                return station.m_overCookedItem == null || name != station.m_overCookedItem.name;
+                try
+                {
+                    Type status = Slot.GetParameters()[3].ParameterType.GetElementType();
+                    object[] args = { i, "", 0f, Activator.CreateInstance(status), false };
+                    Slot.Invoke(station, args);
+                    string name = args[1] as string;
+                    if (string.IsNullOrEmpty(name) || !(bool)Done.Invoke(station, new object[] { name }))
+                        continue;
+                    return station.m_overCookedItem == null || name != station.m_overCookedItem.name;
+                }
+                catch (Exception) { return false; }
             }
             return false;
         }
