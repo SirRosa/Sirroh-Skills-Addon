@@ -61,11 +61,11 @@ namespace Sirroh.SkillsAddon
         [HarmonyPatch(typeof(ItemDrop.ItemData), "IsSameType", new[] { typeof(ItemDrop.ItemData) })]
         private static class GuardFoodIdentity
         {
-            private static void Postfix(ItemDrop.ItemData __instance, ItemDrop.ItemData other,
+            private static void Postfix(ItemDrop.ItemData __instance, ItemDrop.ItemData __0,
                 ref bool __result)
             {
-                if (__result && Garmazerstwo.IsFood(__instance) && Garmazerstwo.IsFood(other) &&
-                    !Garmazerstwo.SameData(__instance, other))
+                if (__result && Garmazerstwo.IsFood(__instance) && Garmazerstwo.IsFood(__0) &&
+                    !Garmazerstwo.SameData(__instance, __0))
                     __result = false;
             }
         }
