@@ -35,5 +35,5 @@ assert 'm_quality =' not in all_code
 assert 'RaiseSkill("Blacksmithing"' not in all_code
 assert 'CharacterDrop' in all_code and 'Ragdoll' in all_code
 manifest = json.loads(Path('manifest.json').read_text(encoding='utf-8'))
-assert manifest['name'] == 'SirrohSkillsAddon'
+assert manifest['name'] == 'Sirroh_Skills_Addon', 'The test Gale display slug must be the validated Thunderstore package name'
 print("Static contracts passed: game-owned items, migration, isolated patches, one DLL.")
