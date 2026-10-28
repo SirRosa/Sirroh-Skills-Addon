@@ -1,5 +1,16 @@
 # Sirroh Skills [Addon]
 
+## 0.4.9 TEST — Mistrza Kuchni i limit +200% przyprawiania
+
+- **Premia za poziom Garmażerstwa:** na poziomie 100 dokładnie +100% podstawowych HP, staminy i Eitru (na poziomie 40 bez dodatkowej serii +40%). Zachowana premia za serię gotowania nie może przebić +100%. Nowa opcja konfiguracyjna `FoodBonusAt100_v2` zastępuje historyczną wartość 20% bez wymuszania usuwania istniejącego pliku konfiguracyjnego.
+- **Premia za przyprawianie:** osobna pula, do **+200% bazowych HP/staminy/Eitru każdego dania**; wartość bazowa równa zero nie może otrzymać dodatniego bonusu tej statystyki. Przykład: danie 25 HP na poziomie 100 daje 50 HP po gotowaniu, dodatkowo maksymalnie 50 HP ze wszystkich przypraw: razem **100 HP** (bazowe 25 HP plus 300% bonusu).
+- **Mistrza Kuchni:** po osiągnięciu limitu przypraw we wszystkich bazowo występujących statystykach pojawia się suffix w tooltipie i dalsze ręczne przyprawianie zostaje zablokowane, bez otwierania potwierdzenia i bez zużycia jedzenia.
+- **Mieszaj:** symuluje premie dla każdej potencjalnej sztuki przyprawy *przed* otwarciem potwierdzenia; nie zużywa składników bez faktycznego wzrostu HP/staminy/Eitru. Po doprowadzeniu cennych potraw do limitu awansuje kolejne najlepsze pozostałe danie do roli bazy. Ukończone potrawy nie są używane jako składniki. Pozostaje nadzór właściciela ZDO, wardów, zmiany zawartości skrzyni oraz zapis transakcyjny.
+- **Stackowanie gotowych potraw:** mistrzowskie warianty tej samej receptury mają kanoniczny profil **premii przyprawiania** (w tym niewielki, stały profil regeneracji), niezależnie od użytej mieszanki składników. Łączą się, jeżeli nadal identyczne są osobne premie od poziomu gotowania, losowy buff i dane innych modów. Mod nie scala potraw mających różne aktywne efekty kosztem utraty danych.
+- **Starsze przedmioty:** zapisane przed aktualizacją nadmierne bonusy są ograniczane także podczas odczytu i spożycia; dotychczasowy format `v3` i odczyt historycznych `v1/v2` pozostają zgodne. Aktualizacja nie przepisuje masowo wszystkich skrzyń.
+
+**Status:** kompilacja i testy kontraktowe w CI; działanie w Valheim 1.0.21, multiplayer, QOL/ZenUI i zapisy skrzyń wymaga testu z kopią świata i postaci. `main` i gałąź 0.4.8 pozostają bez zmian.
+
 ## 0.4.8 TEST — Mieszaj: hurtowe przyprawianie w otwartej skrzyni
 
 **Nowy przycisk Mieszaj** na bocznej drewnianej desce, pozycjonowany na wysokości panelu otwartej skrzyni. Deska korzysta z istniejącego zasobu `QolFavorites.WoodPanel` w Sirroh QOL (refleksja, bez zmian w QOL). Ikona kociołka `mix_kociolek.png` jest wczytywana z katalogu DLL; kompatybilny zasób osadzony w DLL także jest obsługiwany. Bez QOL pozostałe umiejętności Skills Addon działają niezależnie.
