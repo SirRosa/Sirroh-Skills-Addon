@@ -71,7 +71,7 @@ namespace Sirroh.SkillsAddon
                 return false;
             }
             var record = Garmazerstwo.Default(dst);
-            if (record.Spices.Count >= 5)
+            if (record.Stars >= 5)
             {
                 Notify("Posiłek ma już 5 gwiazdek.");
                 return false;
@@ -132,7 +132,7 @@ namespace Sirroh.SkillsAddon
                 return;
             }
             var record = Garmazerstwo.Default(b);
-            if (!Garmazerstwo.AddSpice(record, a, Garmazerstwo.SkillLevel(Player.m_localPlayer)))
+            if (!Garmazerstwo.AddSpice(record, a, b, Garmazerstwo.SkillLevel(Player.m_localPlayer)))
             {
                 Notify("Przyprawianie anulowane: osiągnięto limit 5 gwiazdek.");
                 return;
@@ -148,7 +148,7 @@ namespace Sirroh.SkillsAddon
             try { Changed?.Invoke(dest, new object[] { false, false }); }
             catch (Exception) { /* Serialized item metadata is already committed. */ }
             Garmazerstwo.AwardSpiceXp(n);
-            Notify("Przyprawiono " + n + " × posiłek. Gwiazdki: " + record.Spices.Count + "/5.");
+            Notify("Przyprawiono " + n + " × posiłek. Gwiazdki: " + record.Stars + "/5.");
         }
 
         private static void Cancel()
