@@ -326,13 +326,16 @@ namespace Sirroh.SkillsAddon
             string[] lines = __result.Split('\n');
             for (int i = 0; i < lines.Length; i++)
             {
-                if (IsStatLine(lines[i], "Życie", "Zdrowie", "Health"))
+                // ItemData.GetTooltip returns localization *tokens*, not the
+                // Polish/English labels rendered by Localization.Localize later.
+                // Keep localized names too for other mods that localize early.
+                if (IsStatLine(lines[i], "$item_food_health", "Życie", "Zdrowie", "Health"))
                     lines[i] = ReplaceFirstValue(lines[i], hp);
-                else if (IsStatLine(lines[i], "Kondycja", "Stamina"))
+                else if (IsStatLine(lines[i], "$item_food_stamina", "Kondycja", "Stamina"))
                     lines[i] = ReplaceFirstValue(lines[i], stamina);
-                else if (IsStatLine(lines[i], "Eitr"))
+                else if (IsStatLine(lines[i], "$item_food_eitr", "Eitr"))
                     lines[i] = ReplaceFirstValue(lines[i], eitr);
-                else if (IsStatLine(lines[i], "Leczenie", "Healing"))
+                else if (IsStatLine(lines[i], "$item_food_regen", "Leczenie", "Healing"))
                     lines[i] = ReplaceFirstValue(lines[i], heal);
             }
             __result = string.Join("\n", lines);
