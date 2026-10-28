@@ -395,7 +395,11 @@ namespace Sirroh.SkillsAddon
                 {
                     foreach (var group in plan.Bases)
                         foreach (var item in group.Targets)
+                        {
+                            if (item.m_customData == null)
+                                item.m_customData = new Dictionary<string,string>();
                             item.m_customData[Garmazerstwo.Key] = group.Result;
+                        }
                     foreach (var take in plan.Consumed)
                         if (!plan.Inventory.RemoveItem(take.Key, take.Value))
                             throw new InvalidOperationException("RemoveItem failed");
@@ -451,10 +455,12 @@ namespace Sirroh.SkillsAddon
 
         private static void RestoreData(ItemDrop.ItemData item, ItemDrop.ItemData backup)
         {
-            if (item.m_customData == null || backup.m_customData == null) return;
+            if (item.m_customData == null)
+                item.m_customData = new Dictionary<string,string>();
             item.m_customData.Clear();
-            foreach (var pair in backup.m_customData)
-                item.m_customData[pair.Key] = pair.Value;
+            if (backup.m_customData != null)
+                foreach (var pair in backup.m_customData)
+                    item.m_customData[pair.Key] = pair.Value;
         }
     }
 }
