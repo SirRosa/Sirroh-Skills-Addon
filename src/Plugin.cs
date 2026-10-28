@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Sirroh.SkillsAddon
 {
-    [BepInPlugin(Guid, "Sirroh Skills Addon", Version)]
+    [BepInPlugin(Guid, "Sirroh Skills [Addon]", Version)]
     [BepInDependency(Jotunn.Main.ModGuid)]
     [BepInDependency(OverhaulGuid)]
     [BepInIncompatibility("neithar.Slayer")]
@@ -20,7 +20,7 @@ namespace Sirroh.SkillsAddon
     {
         internal const string Guid = "sirroh.skills.addon";
         internal const string OverhaulGuid = "sirro.valheim.pracafizyczna";
-        internal const string Version = "0.4.0";
+        internal const string Version = "0.4.1";
         internal static Plugin Instance;
         internal static Skills.SkillType SlayerType;
         internal static Skills.SkillType BrawlerType;

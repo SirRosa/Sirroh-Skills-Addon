@@ -1,4 +1,4 @@
-name: Build Sirroh Skills Addon
+name: Build Sirroh Skills [Addon]
 on:
   push:
     branches: [main, 'test/**']
@@ -19,7 +19,7 @@ jobs:
         id: valheim
         with:
           path: ${{ runner.temp }}/valheim/valheim_server_Data/Managed
-          key: valheim-1.0-dedicated-refs-v1
+          key: valheim-target-1.0.21-dedicated-refs-v1
       - uses: CyberAndrii/setup-steamcmd@v1
         if: steps.valheim.outputs.cache-hit != 'true'
       - name: Download game references
@@ -62,7 +62,7 @@ jobs:
           for item in assembly_valheim.dll assembly_utils.dll assembly_guiutils.dll UnityEngine.CoreModule.dll UnityEngine.dll UnityEngine.UI.dll UnityEngine.PhysicsModule.dll UnityEngine.ImageConversionModule.dll UnityEngine.UIModule.dll Unity.TextMeshPro.dll; do
             cp "$RUNNER_TEMP/valheim/valheim_server_Data/Managed/$item" ".ci-deps/$item"
           done
-      - name: Inspect Valheim 1.0 Harmony targets
+      - name: Inspect target Valheim 1.0.21 APIs using current Steam server references
         run: dotnet run --project tools/ApiProbe.csproj -c Release -- .ci-deps/assembly_valheim.dll .ci-deps/BepInEx.dll
       - name: Verify isolation, migration and no duplicate stat writes
         run: python3 tools/verify_contracts.py
@@ -86,7 +86,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: SirrohSkillsAddon-v0.4.0
+          name: SirrohSkillsAddon-v0.4.1
           path: dist/*.zip
           if-no-files-found: error
 
@@ -106,6 +106,6 @@ jobs:
             gh release create "$tag" "$archive" \
               --target "$GITHUB_SHA" \
               --prerelease \
-              --title "Sirroh Skills Addon $tag — test build" \
+              --title "Sirroh Skills [Addon] $tag — test build" \
               --notes "Kolos (Slayer), Zawadiaka (one-handed), Łowca Głów (trophies plus 10/5 kill thresholds). Optional Blacksmithing Expanded compatibility. Compiled and API-checked on Valheim 1.0; in-game multiplayer tests remain necessary."
           fi

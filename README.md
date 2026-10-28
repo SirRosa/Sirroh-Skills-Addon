@@ -1,8 +1,10 @@
-# Sirroh Skills Addon
+# Sirroh Skills [Addon]
 
-## Wersja testowa 0.4.0 — Garmażerstwo i Kuźnictwo
+## Wersja testowa 0.4.1 — Garmażerstwo i Kuźnictwo
 
-**Status: kompilacja CI, bez potwierdzonych testów rozgrywki.** Gałąź `test/garmazerstwo-kuznictwo-2026-10-28` jest odizolowana od `main`. Przed próbą na własnej postaci/świecie zachowaj kopię zapisów. Klient i serwer muszą mieć zgodną DLL.
+**Ikona pakietu:** autorska tarcza SirRo, 256×256 px. Nazwa BepInEx: `Sirroh Skills [Addon]`. Identyfikator pakietu Thunderstore `SirrohSkillsAddon` pozostaje bez zmian — nawiasy kwadratowe są niedozwolone w nazwie technicznej.
+
+**Status: kompilacja CI z referencjami serwera Steam; bez potwierdzonych testów rozgrywki na Valheim 1.0.21.** Gałąź `test/garmazerstwo-kuznictwo-2026-10-28` jest odizolowana od `main`. Przed próbą na własnej postaci/świecie zachowaj kopię zapisów. Klient i serwer muszą mieć zgodną DLL.
 
 - **Kuźnictwo**: polska nazwa i opisy Blacksmithing Expanded 1.2.4, 60 spolszczonych ustawień F1, nazwy żywiołów oraz dopisek „Wykute na poziomie X Kuźnictwa”. Nie zmieniamy zapisanych identyfikatorów ani statystyk Blacksmithing. Zewnętrzny Blacksmithing Expanded nadal jest opcjonalny.
 - **Kolos**: oryginalny identyfikator `neithar.Slayer`, użytkownika ikona Broń Dwuręczna.
@@ -15,7 +17,7 @@
 **Przed potwierdzeniem stabilności wymagane testy w grze:** czysty profil, uruchomienie wraz z Overhaul, gotowanie/seryjne gotowanie, losowania 75/100, przyprawianie 1:1 i 10:10, pięć gwiazdek, zapis/relog, aktywne jedzenie, QuickStack/Sort/Restock z QOL, ExtraSlots, Blacksmithing 1.2.4, multiplayer/dedicated server. Kompilacja i statyczne testy API nie dowodzą pełnej zgodności rozgrywki.
 
 
-Rozszerzenie **Sirroh Overhaul** do Valheim 1.0.
+Rozszerzenie **Sirroh Overhaul** do Valheim 1.0.21 (docelowa wersja; wymagane testy rozgrywki).
 
 ## Zakres
 - **Kolos (dawniej Slayer)**: osobna umiejętność dla broni dwuręcznych, bonus obrażeń, odporność na odrzut i zwiększenie obrażeń ogłuszających.

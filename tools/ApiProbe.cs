@@ -110,6 +110,15 @@ foreach (var typeName in new[] { "Player", "Character", "Humanoid", "CookingStat
             ") -> " + m.ReturnType.Name);
 }
 
+// Game-version diagnostic: read the currently fetched Steam dedicated server's
+// managed assembly metadata without asserting that it is a tested 1.0.21 client.
+foreach (var vt in assembly.MainModule.Types.Where(t =>
+    t.Name.IndexOf("Version", StringComparison.OrdinalIgnoreCase) >= 0).Take(12))
+    foreach (var fld in vt.Fields.Where(f =>
+        f.Name.IndexOf("version", StringComparison.OrdinalIgnoreCase) >= 0).Take(16))
+        Console.WriteLine("GAME VERSION REFERENCE " + vt.Name + "." + fld.Name +
+            " = " + (fld.HasConstant ? Convert.ToString(fld.Constant) : "<runtime>"));
+
 if (args.Length > 1 && System.IO.File.Exists(args[1]))
 {
     using var bep = AssemblyDefinition.ReadAssembly(args[1]);
