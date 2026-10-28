@@ -22,6 +22,8 @@ namespace Sirroh.SkillsAddon
         internal static bool CookingCraft;
         internal static int CookingAmount;
         private static int cookStreak;
+        private static FieldInfo externalStreak;
+        private static bool externalStreakChecked;
         private static float lastCookTime;
         private static MethodInfo getTooltip;
 
@@ -192,6 +194,26 @@ namespace Sirroh.SkillsAddon
             return buff;
         }
 
+        private static int EffectiveCookingStreak()
+        {
+            if (!externalStreakChecked)
+            {
+                externalStreakChecked = true;
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    var module = assembly.GetType("ImpactfulSkills.patches.Cooking", false);
+                    externalStreak = module == null ? null : AccessTools.Field(module, "CookingStreak");
+                    if (externalStreak != null) break;
+                }
+            }
+            if (externalStreak != null)
+            {
+                try { return Mathf.Max(0, Convert.ToInt32(externalStreak.GetValue(null))); }
+                catch (Exception) { }
+            }
+            return cookStreak;
+        }
+
         internal static void OnCook(ItemDrop.ItemData item, int count, bool awardXp = true)
         {
             if (Enabled?.Value != true || !IsFood(item) || Player.m_localPlayer == null ||
@@ -200,7 +222,7 @@ namespace Sirroh.SkillsAddon
             if (Time.time - lastCookTime > 120f) cookStreak = 0;
             cookStreak = Mathf.Min(100, cookStreak + count);
             lastCookTime = Time.time;
-            float streak = Mathf.Clamp01((cookStreak - 1f) / 10f);
+            float streak = Mathf.Clamp01((EffectiveCookingStreak() - 1f) / 10f);
             var data = new Food {
                 Level = Mathf.RoundToInt(level),
                 CookPercent = level / 100f * (CookMax.Value + StreakMax.Value * streak) / 100f
@@ -273,6 +295,11 @@ namespace Sirroh.SkillsAddon
             if (data == null) return;
             __result += "\n<color=#D6B36B>Ugotowano na poziomie " + data.Level +
                         " Garmażerstwa</color>";
+            __result += "\n<color=#D6B36B>Statystyki posiłku: HP " +
+                F(item.m_shared.m_food * (1f + data.CookPercent) + data.Hp) +
+                ", stamina " + F(item.m_shared.m_foodStamina * (1f + data.CookPercent) + data.Stamina) +
+                ", Eitr " + F(item.m_shared.m_foodEitr * (1f + data.CookPercent) + data.Eitr) +
+                "</color>";
             if (data.Spices.Count > 0)
             {
                 __result += "\n<color=#D6B36B>Przyprawienie: " + data.Spices.Count + "/5 ★</color>";
