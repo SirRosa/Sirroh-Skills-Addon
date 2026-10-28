@@ -33,8 +33,8 @@ assert 'regenHp = d.m_foodRegen + Mathf.Clamp(' in food
 assert 'state.HpRegen += Mathf.Clamp(data.HpRegen,' in effects
 assert 'extraHealth = Mathf.Clamp(extraHealth, 0f, state.VanillaHpRegen);' in effects
 assert 'data.Hp = nextHp;' in food
-assert 'data.Stamina += bonusStamina;' in food
-assert 'data.Eitr += bonusEitr;' in food
+assert 'data.Stamina = nextStamina;' in food
+assert 'data.Eitr = nextEitr;' in food
 assert 'Effective(source, out float hp, out float stamina, out float eitr,' in food
 assert 'data.Level = Mathf.RoundToInt(Mathf.Clamp(skillLevel, 0f, 100f));' in food
 assert 'data.CookPercent = CookPercentage(skillLevel);' in food
