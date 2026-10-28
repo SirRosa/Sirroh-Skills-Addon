@@ -105,6 +105,31 @@ namespace Sirroh.SkillsAddon
                     }
                 }
             }
+            // Distribution-safe external override: the exact PNG from the
+            // conversation may be shipped next to the DLL even if the GitHub
+            // CI runner cannot access conversation attachments.
+            try
+            {
+                string directory = Path.GetDirectoryName(assembly.Location);
+                string path = Path.Combine(directory ?? "", "mix_kociolek.png");
+                if (File.Exists(path))
+                {
+                    var bytes = File.ReadAllBytes(path);
+                    _symbolTexture = new Texture2D(2,2,TextureFormat.RGBA32,false);
+                    if (ImageConversion.LoadImage(_symbolTexture,bytes,true))
+                    {
+                        _symbol = Sprite.Create(_symbolTexture,
+                            new Rect(0,0,_symbolTexture.width,_symbolTexture.height),
+                            new Vector2(.5f,.5f),100f);
+                        return _symbol;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance?.Warning("Mieszaj: nie można załadować ikony: " +
+                    e.GetType().Name);
+            }
             // Existing original skill art is suitable only as a safe fallback.
             using (Stream input = assembly.GetManifestResourceStream(
                 "sirroh.icons.garmazerstwo.png"))
