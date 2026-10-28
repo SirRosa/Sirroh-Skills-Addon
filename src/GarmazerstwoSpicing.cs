@@ -165,8 +165,8 @@ namespace Sirroh.SkillsAddon
                 // Native Inventory API: clone target (including metadata), place
                 // upgraded portion in an explicitly empty grid cell. Original B
                 // remains with its old stats and untouched count.
-                Vector2i slot = dest.FindEmptySlot(false);
-                if (!IsEmptySlot(dest, slot))
+                Vector2i slot;
+                if (!TryFindFreeSlot(dest, out slot))
                 {
                     Notify("Brak wolnego slotu na automatyczny podział stosu.");
                     return;
@@ -214,16 +214,26 @@ namespace Sirroh.SkillsAddon
             return item.m_customData.TryGetValue(Garmazerstwo.Key, out string data) ? data : null;
         }
 
-        private static bool IsEmptySlot(Inventory inv, Vector2i slot)
+        private static bool TryFindFreeSlot(Inventory inv, out Vector2i slot)
         {
-            return inv != null && slot.x >= 0 && slot.x < inv.GetWidth() &&
-                slot.y >= 0 && slot.y < inv.GetHeight() &&
-                inv.GetItemAt(slot.x, slot.y) == null;
+            slot = new Vector2i(-1, -1);
+            if (inv == null) return false;
+            // FindEmptySlot is private in Valheim 1.0.21. Scan only
+            // actual free cells in the player's vanilla inventory grid.
+            for (int y = 0; y < inv.GetHeight(); y++)
+            for (int x = 0; x < inv.GetWidth(); x++)
+                if (inv.GetItemAt(x, y) == null)
+                {
+                    slot = new Vector2i(x, y);
+                    return true;
+                }
+            return false;
         }
 
         private static bool HasFreeSlot(Inventory inv)
         {
-            return inv != null && IsEmptySlot(inv, inv.FindEmptySlot(false));
+            Vector2i free;
+            return TryFindFreeSlot(inv, out free);
         }
 
         private static void Cancel()
