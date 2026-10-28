@@ -163,7 +163,13 @@ namespace Sirroh.SkillsAddon
         internal static Food Read(ItemDrop.ItemData item)
         {
             if (item?.m_customData == null || !item.m_customData.TryGetValue(Key, out string value)) return null;
-            return Parse(value);
+            var record = Parse(value);
+            if (record == null) return null;
+            ClampSeasoning(record, item);
+            // Existing legacy overpowered dishes are capped on read, without
+            // destructively rewriting the inventory during loading.
+            NormalizeMaster(record, item);
+            return record;
         }
 
         internal static void Write(ItemDrop.ItemData item, Food data)
@@ -178,7 +184,18 @@ namespace Sirroh.SkillsAddon
             string av = null, bv = null;
             var hasA = a.m_customData != null && a.m_customData.TryGetValue(Key, out av);
             var hasB = b.m_customData != null && b.m_customData.TryGetValue(Key, out bv);
-            return hasA == hasB && (!hasA || av == bv);
+            if (hasA != hasB) return false;
+            if (!hasA || av == bv) return true;
+            // Completed meals have canonical seasoning stats independent of
+            // which ingredients were spent. Only compare them as identical if
+            // their separate cooking level and special effects also match.
+            if (IsMaster(a) && IsMaster(b))
+            {
+                Food aRecord = Read(a), bRecord = Read(b);
+                return aRecord != null && bRecord != null &&
+                       Serialize(aRecord) == Serialize(bRecord);
+            }
+            return false;
         }
 
         private static string RollBuff(ItemDrop.ItemData item, out float amount)
