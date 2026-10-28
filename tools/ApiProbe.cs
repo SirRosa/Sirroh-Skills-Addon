@@ -182,6 +182,17 @@ foreach (var ty in new [] { invType, dataType }.Where(t => t != null))
     foreach (var field in ty.Fields.Where(f => f.Name.Contains("inventory") || f.Name.Contains("gridPos") || f.Name.Contains("stack")))
         Console.WriteLine("SEASON FIELD " + ty.FullName + "::" + field.Name + ": " + field.FieldType.FullName);
 }
+
+foreach (var method in (invType?.Methods ?? Enumerable.Empty<Mono.Cecil.MethodDefinition>())
+    .Where(m => m.Name == "AddItem" && m.Parameters.Count == 2 &&
+                m.Parameters[0].ParameterType.Name == "ItemData" &&
+                m.HasBody))
+{
+    Console.WriteLine("SEASON ADDITEM IL START");
+    foreach (var instruction in method.Body.Instructions.Take(150))
+        Console.WriteLine("SEASON IL " + instruction);
+    Console.WriteLine("SEASON ADDITEM IL END");
+}
 // Game-version diagnostic: read the currently fetched Steam dedicated server's
 // managed assembly metadata without asserting that it is a tested 1.0.21 client.
 foreach (var vt in assembly.MainModule.Types.Where(t =>
