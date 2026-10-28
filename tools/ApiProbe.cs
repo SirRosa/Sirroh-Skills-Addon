@@ -165,6 +165,23 @@ foreach (var probeName in new[] { "ItemData", "ItemDrop/ItemData" })
             Console.WriteLine("ZEN BRIDGE FIELD " + td.FullName + "." + fld.Name + " " + fld.FieldType.FullName);
     }
 }
+
+var invType = assembly.MainModule.Types.FirstOrDefault(t => t.Name == "Inventory");
+var dataType = assembly.MainModule.Types.SelectMany(Descend).FirstOrDefault(t => t.FullName == "ItemDrop/ItemData");
+foreach (var ty in new [] { invType, dataType }.Where(t => t != null))
+{
+    foreach (var m in ty.Methods.Where(m => m.Name.Contains("AddItem") || m.Name.Contains("RemoveItem") ||
+        m.Name.Contains("GetAllItems") || m.Name.Contains("GetEmpty") || m.Name.Contains("FindEmpty") ||
+        m.Name.Contains("Clone") || m.Name.Contains("Changed") || m.Name.Contains("CanAdd") ||
+        m.Name.Contains("GetItemAt")))
+    {
+        Console.WriteLine("SEASON API " + ty.FullName + "::" + m.Name + "(" +
+          string.Join(", ", m.Parameters.Select(p => p.ParameterType.Name+" "+p.Name)) +
+          ") -> " + m.ReturnType.FullName);
+    }
+    foreach (var field in ty.Fields.Where(f => f.Name.Contains("inventory") || f.Name.Contains("gridPos") || f.Name.Contains("stack")))
+        Console.WriteLine("SEASON FIELD " + ty.FullName + "::" + field.Name + ": " + field.FieldType.FullName);
+}
 // Game-version diagnostic: read the currently fetched Steam dedicated server's
 // managed assembly metadata without asserting that it is a tested 1.0.21 client.
 foreach (var vt in assembly.MainModule.Types.Where(t =>
