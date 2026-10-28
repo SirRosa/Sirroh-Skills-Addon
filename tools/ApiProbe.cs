@@ -97,6 +97,19 @@ if (foodType != null)
     foreach (var fld in foodType.Fields)
         Console.WriteLine("FOOD FIELD " + fld.Name + " " + fld.FieldType.Name);
 
+foreach (var typeName in new[] { "Player", "Character", "Humanoid", "CookingStation" })
+{
+    var ty = assembly.MainModule.Types.FirstOrDefault(t => t.Name == typeName);
+    if (ty == null) continue;
+    foreach (var m in ty.Methods.Where(m =>
+        m.Name.IndexOf("Jump", StringComparison.OrdinalIgnoreCase) >= 0 ||
+        m.Name.IndexOf("Swim", StringComparison.OrdinalIgnoreCase) >= 0 ||
+        m.Name.IndexOf("Cook", StringComparison.OrdinalIgnoreCase) >= 0))
+        Console.WriteLine("FOOD SEARCH " + typeName + "." + m.Name + "(" +
+            string.Join(", ", m.Parameters.Select(p => p.ParameterType.Name + " " + p.Name)) +
+            ") -> " + m.ReturnType.Name);
+}
+
 if (args.Length > 1 && System.IO.File.Exists(args[1]))
 {
     using var bep = AssemblyDefinition.ReadAssembly(args[1]);
