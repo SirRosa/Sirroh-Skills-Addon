@@ -1,5 +1,17 @@
 # Sirroh Skills [Addon]
 
+## 0.4.6 TEST — przyprawianie bez limitu, balans regeneracji i rozdzielanie stosów
+
+Usunięto system gwiazdek i limit pięciu przyprawień. Potrawy można przyprawiać bez końca; ich dane zapisują się teraz w zwięzłym formacie v3 (poprzednie v1 i v2 są nadal odczytywane, a premie zachowane). Nie zmieniamy rzeczywistego `ItemData.m_quality`.
+
+**Regeneracja HP:** jedno przyprawienie zapewnia 20% bazowej regeneracji HP przyprawy, bez minimalnego +1 i bez zaokrągleń. 1/2/10 HP na tick przyprawy daje odpowiednio +0,2/+0,4/+2 HP na tick. Całkowita regeneracja jedzenia nie może przekroczyć dwukrotności jego własnej bazowej regeneracji. Stare posiłki o większym bonusie są ograniczone podczas odczytu, bez utraty zapisanych HP/staminy/Eitr. Również losowy bonus regeneracji nie omija tego limitu.
+
+**Stosy:** gdy A jest mniejszy od B, przyprawiana jest liczba sztuk min(A,B), a pozostała część B zachowuje dotychczasowe właściwości. Podział wykonywany jest natywnym `ItemData.Clone()` i `Inventory.AddItem(item, position)` z kontrolą, czy cel jest wolny. Na podział potrzeba jednego wolnego slotu; jeśli go nie ma, operacja nie zużywa jedzenia. Potwierdzenie i odświeżenie ekwipunku pozostają takie jak dotychczas.
+
+**Bez zmian:** Kuźnictwo/Blacksmithing, ZenUI 1.9.3, Kolos, Zawadiaka, Łowca Głów, ikony, GUID i stara gałąź main. Kompilacja CI nie jest testem działania w grze; przed uruchomieniem na Valheim 1.0.21 zachowaj kopię zapisów.
+
+### Poprzednie wydania testowe
+
 ## Wersja testowa 0.4.5 — opcjonalna kompatybilność z ZenUI
 
 **ZenUI 1.9.3 (ZenDragon.ZenUI):** po wykryciu moda Sirroh Skills automatycznie dołącza izolowany postfix do `ZenUI.Section.TooltipSummary.GetTooltipSummary`. ZenUI domyślnie generuje uproszczone ikony HP/staminy/Eitr z `m_shared`, ignorując premie unikatowego jedzenia. Adapter modyfikuje wyłącznie liczby w gotowych `<nobr>` z ikonami 💖 💪 ✨, bazując na `m_customData` i istniejącej metodzie Garmażerstwa; jeśli przyprawienie wprowadziło nową statystykę, doda brakującą ikonę. Pełne tooltipy, sposób gotowania, przyprawiania, stacki, statystyki rzeczywiste, jakość i globalny `m_shared` pozostają nietknięte. ZenUI jest **opcjonalny** i nie jest wymaganą zależnością. Dla zmienionego ZenUI lub braku wymaganej metody integracja jest wyłączana z ostrzeżeniem, bez zmiany pozostałych skilli. Nie testowano renderowania w uruchomionym kliencie.
