@@ -82,9 +82,8 @@ namespace Sirroh.SkillsAddon
             {
                 if (input == null)
                 {
-                    // Temporary fallback for older packaging; only active if
-                    // the dedicated user graphic is missing from the build.
-                    input = null;
+                    // Exact original PNG is optional in older test packages.
+                    // Fallback below uses the previously supplied skill art.
                 }
                 else
                 {
@@ -334,13 +333,15 @@ namespace Sirroh.SkillsAddon
         {
             if (_gui == null || _woodRoot == null) return;
             bool show = _visible && _gui == InventoryGui.instance &&
+                ChestPanel(_gui) != null &&
                 InventoryGui.IsVisible() && _gui.m_player != null &&
                 _gui.m_player.gameObject.activeInHierarchy &&
                 Garmazerstwo.Enabled?.Value == true &&
                 GarmazerstwoMixing.CurrentContainer(_gui) != null &&
                 !Blocked(_gui) && !Menu.IsVisible() && !UnifiedPopup.IsVisible();
             if (show && (!_woodRoot.activeSelf || _screenW != Screen.width ||
-                         _screenH != Screen.height))
+                         _screenH != Screen.height || _woodImage.sprite == null ||
+                         _woodMaterial == null))
             {
                 Position(_gui);
                 SyncLighting();
