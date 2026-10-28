@@ -192,7 +192,7 @@ namespace Sirroh.SkillsAddon
             return buff;
         }
 
-        internal static void OnCook(ItemDrop.ItemData item, int count)
+        internal static void OnCook(ItemDrop.ItemData item, int count, bool awardXp = true)
         {
             if (Enabled?.Value != true || !IsFood(item) || Player.m_localPlayer == null ||
                 Read(item) != null || count <= 0) return;
@@ -207,7 +207,7 @@ namespace Sirroh.SkillsAddon
             };
             data.Buff = RollBuff(item, out data.BuffValue);
             Write(item, data);
-            Player.m_localPlayer.RaiseSkill(SkillType, XpCook.Value * count);
+            if (awardXp) AwardCookingXp(count);
         }
 
         internal static Spice BuildSpice(ItemDrop.ItemData source, float level)
@@ -241,6 +241,12 @@ namespace Sirroh.SkillsAddon
         internal static Food Default(ItemDrop.ItemData target)
         {
             return Read(target) ?? new Food { Level = 0, CookPercent = 0f };
+        }
+
+        internal static void AwardCookingXp(int count)
+        {
+            if (count > 0 && Player.m_localPlayer != null)
+                Player.m_localPlayer.RaiseSkill(SkillType, XpCook.Value * count);
         }
 
         internal static void AwardSpiceXp(int count)
