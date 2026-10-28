@@ -252,9 +252,9 @@ namespace Sirroh.SkillsAddon
         [HarmonyPatch(typeof(Player), "EatFood")]
         private static class EatFood
         {
-            private static void Prefix(Player __instance, ItemDrop.ItemData item)
+            private static void Prefix(Player __instance, ItemDrop.ItemData __0)
             {
-                aboutToEat = ReferenceEquals(__instance, Player.m_localPlayer) ? item : null;
+                aboutToEat = ReferenceEquals(__instance, Player.m_localPlayer) ? __0 : null;
             }
             private static void Postfix(Player __instance, bool __result)
             {
@@ -343,11 +343,11 @@ namespace Sirroh.SkillsAddon
         [HarmonyPatch(typeof(Player), "RaiseSkill")]
         private static class ExperienceBonus
         {
-            private static void Prefix(Player __instance, Skills.SkillType skill, ref float factor)
+            private static void Prefix(Player __instance, Skills.SkillType __0, ref float __1)
             {
                 if (!ReferenceEquals(__instance, Player.m_localPlayer) ||
-                    skill == Garmazerstwo.SkillType) return;
-                factor *= 1f + Buff(__instance, "experience");
+                    __0 == Garmazerstwo.SkillType) return;
+                __1 *= 1f + Buff(__instance, "experience");
             }
         }
 
