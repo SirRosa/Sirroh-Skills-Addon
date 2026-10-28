@@ -68,6 +68,8 @@ jobs:
         run: python3 tools/verify_contracts.py
       - name: Verify complete Blacksmithing Polish UI and head-hunter visibility
         run: python3 tools/verify_progress_localization.py
+      - name: Verify Garmazerstwo preservation, five stars, original icons and isolation
+        run: python3 tools/verify_garmazerstwo.py
       - name: Compile net48 DLL
         run: dotnet build SirrohSkillsAddon.csproj -c Release -p:ReferenceDir="$GITHUB_WORKSPACE/.ci-deps" --nologo
       - name: Assemble Thunderstore package
