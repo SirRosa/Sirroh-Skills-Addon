@@ -1,5 +1,20 @@
 # Sirroh Skills Addon
 
+## Wersja testowa 0.4.0 — Garmażerstwo i Kuźnictwo
+
+**Status: kompilacja CI, bez potwierdzonych testów rozgrywki.** Gałąź `test/garmazerstwo-kuznictwo-2026-10-28` jest odizolowana od `main`. Przed próbą na własnej postaci/świecie zachowaj kopię zapisów. Klient i serwer muszą mieć zgodną DLL.
+
+- **Kuźnictwo**: polska nazwa i opisy Blacksmithing Expanded 1.2.4, 60 spolszczonych ustawień F1, nazwy żywiołów oraz dopisek „Wykute na poziomie X Kuźnictwa”. Nie zmieniamy zapisanych identyfikatorów ani statystyk Blacksmithing. Zewnętrzny Blacksmithing Expanded nadal jest opcjonalny.
+- **Kolos**: oryginalny identyfikator `neithar.Slayer`, użytkownika ikona Broń Dwuręczna.
+- **Łowca Głów**: zachowany istniejący system punktów, bez dodatkowej sztucznej umiejętności; plik ikony trofeów jest osadzony, lecz nie zastępuje zwykłych ikon trofeów.
+- **Garmażerstwo**: nowy skill `sirroh.skills.addon.garmazerstwo`, +0–20% statystyk gotowanego jedzenia i do +10% z serii Gotowania, od poziomu 75 jeden losowy dodatkowy efekt.
+- **Przyprawianie**: upuszczenie posiłku A na B w ekwipunku, natywne potwierdzenie Tak/Nie, zużycie 1:1. Każde z maksymalnie pięciu przyprawień zachowuje osobny zapis i przenosi 5–10% oryginalnych statystyk posiłku A (minimum +1 dla obecnej statystyki). Ponowne przyprawienie tym samym posiłkiem dodaje następny bonus.
+- **Stosy**: pełen stos B może być przyprawiony stosami A, gdy A jest co najmniej tyle samo. Częściowe przyprawianie B wymaga najpierw ręcznego rozdzielenia stosu. Jedzenie o różnym `m_customData` nie powinno być łączone.
+- **Zapis**: przyprawy i premie są przechowywane w danych egzemplarza jedzenia, nie w `SharedData`; dla spożytych posiłków działa oddzielny zapis postaci.
+
+**Przed potwierdzeniem stabilności wymagane testy w grze:** czysty profil, uruchomienie wraz z Overhaul, gotowanie/seryjne gotowanie, losowania 75/100, przyprawianie 1:1 i 10:10, pięć gwiazdek, zapis/relog, aktywne jedzenie, QuickStack/Sort/Restock z QOL, ExtraSlots, Blacksmithing 1.2.4, multiplayer/dedicated server. Kompilacja i statyczne testy API nie dowodzą pełnej zgodności rozgrywki.
+
+
 Rozszerzenie **Sirroh Overhaul** do Valheim 1.0.
 
 ## Zakres
