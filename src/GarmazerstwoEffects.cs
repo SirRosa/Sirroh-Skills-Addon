@@ -221,7 +221,10 @@ namespace Sirroh.SkillsAddon
                     if (!state.Buffs.TryGetValue(data.Buff, out float previous) ||
                         previous < data.BuffValue) state.Buffs[data.Buff] = data.BuffValue;
                 }
-                state.HpRegen += data.HpRegen;
+                // Existing v1/v2 foods may have oversized saved regen; enforce
+                // the new 2x base cap even before they are seasoned again.
+                state.HpRegen += Mathf.Clamp(data.HpRegen,
+                    0f, Mathf.Max(0f, item.m_shared.m_foodRegen));
                 state.StaminaRegen += data.StaminaRegen;
                 state.EitrRegen += data.EitrRegen;
                 state.VanillaHpRegen += item.m_shared.m_foodRegen;
@@ -343,6 +346,8 @@ namespace Sirroh.SkillsAddon
                     float extraHealth = state.HpRegen;
                     if (state.Buffs.TryGetValue("hp_regen", out float hpBonus))
                         extraHealth += state.VanillaHpRegen * hpBonus;
+                    // A random regen buff must not bypass the overall 2x cap.
+                    extraHealth = Mathf.Clamp(extraHealth, 0f, state.VanillaHpRegen);
                     if (extraHealth > 0f && Heal != null)
                         Heal.Invoke(__instance, new object[] { extraHealth / 10f, true });
                     if (state.StaminaRegen > 0f && AddStamina != null)
