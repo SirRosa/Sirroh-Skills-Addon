@@ -1,8 +1,8 @@
 # Sirroh Skills [Addon]
 
-## Wersja testowa 0.4.1 — Garmażerstwo i Kuźnictwo
+## Wersja testowa 0.4.2 — kosmetyczna poprawka nazwy i ikony
 
-**Ikona pakietu:** autorska tarcza SirRo, 256×256 px. Nazwa BepInEx: `Sirroh Skills [Addon]`. Identyfikator pakietu Thunderstore `SirrohSkillsAddon` pozostaje bez zmian — nawiasy kwadratowe są niedozwolone w nazwie technicznej.
+**Identyfikacja w Gale:** nazwa pakietu to `Sirroh_Skills_Addon`, wyświetlana najczęściej jako „Sirroh Skills Addon” (Thunderstore nie akceptuje nawiasów kwadratowych w technicznej nazwie). **Nazwa BepInEx:** `Sirroh Skills [Addon]`. Ikona: oryginalna tarcza SirRo, 256×256 px. **Ważne:** przed instalacją usuń dawny lokalny pakiet `SirrohSkillsAddon` z profilu Gale, inaczej mogą znaleźć się w nim dwie kopie identycznej DLL. Mod zachowuje GUID `sirroh.skills.addon` oraz wszystkie identyfikatory skilli, konfigurację i zapis. Graficzny zasób pozostał bez zmian w porównaniu z poprawnym archiwum 0.4.1.
 
 **Status: kompilacja CI z referencjami serwera Steam; bez potwierdzonych testów rozgrywki na Valheim 1.0.21.** Gałąź `test/garmazerstwo-kuznictwo-2026-10-28` jest odizolowana od `main`. Przed próbą na własnej postaci/świecie zachowaj kopię zapisów. Klient i serwer muszą mieć zgodną DLL.
 

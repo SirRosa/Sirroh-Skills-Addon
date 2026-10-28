@@ -17,8 +17,8 @@ csproj = Path("SirrohSkillsAddon.csproj").read_text(encoding="utf-8")
 workflow = Path(".github/workflows/build.yml").read_text(encoding="utf-8")
 manifest = json.loads(Path("manifest.json").read_text(encoding="utf-8"))
 
-assert manifest["version_number"] == "0.4.1"
-assert 'internal const string Version = "0.4.1"' in plugin
+assert manifest["version_number"] == "0.4.2"
+assert 'internal const string Version = "0.4.2"' in plugin
 assert 'Identifier = Guid + ".garmazerstwo"' in plugin
 assert 'Identifier = "neithar.Slayer"' in plugin
 assert 'Identifier = Guid + ".zawadiaka"' in plugin
@@ -61,6 +61,6 @@ package_icon = Path("assets/thunderstore/icon.png").read_bytes()
 assert package_icon[:8] == bytes((137, 80, 78, 71, 13, 10, 26, 10))
 assert struct.unpack(">II", package_icon[16:24]) == (256, 256)
 assert '[BepInPlugin(Guid, "Sirroh Skills [Addon]", Version)]' in plugin
-assert manifest["name"] == "SirrohSkillsAddon"
+assert manifest["name"] == "Sirroh_Skills_Addon"
 assert "tools/build_icon.py dist/package/icon.png" in workflow
-print("PASS: Sirroh Skills [Addon] branding, uploaded icon, and original package ID.")
+print("PASS: refreshed Gale package slug, unchanged custom icon, stable plugin GUID and original skill IDs.")
