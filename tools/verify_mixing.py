@@ -8,8 +8,8 @@ ui=(root/"GarmazerstwoMixUI.cs").read_text("utf8")
 plugin=(root/"Plugin.cs").read_text("utf8")
 proj=Path("SirrohSkillsAddon.csproj").read_text("utf8")
 manifest=json.loads(Path("manifest.json").read_text("utf8"))
-assert manifest["version_number"]=="0.4.8"
-assert 'internal const string Version = "0.4.8"' in plugin
+assert manifest["version_number"]=="0.4.9"
+assert 'internal const string Version = "0.4.9"' in plugin
 for token in ("GarmazerstwoMixUI.Install(harmony)", "GarmazerstwoMixUI.Tick()",
               "GarmazerstwoMixing.Tick()", "GarmazerstwoMixUI.Shutdown()",
               "GarmazerstwoMixing.Shutdown()"):
@@ -17,8 +17,8 @@ for token in ("GarmazerstwoMixUI.Install(harmony)", "GarmazerstwoMixUI.Tick()",
 for token in ("RelativeBaseThreshold = .85f", "GroupBy(Garmazerstwo.Prefab)",
               "Value(i) >= minimum", "DataSignature(item)", "source.m_stack",
               "plan.Consumed[source]++", "target.Spices.Add(source)",
-              "plan.Bases[candidate].Prefab == Garmazerstwo.Prefab(source)",
-              "Garmazerstwo.AddSpice(record, ingredient, exemplar",
+              "target.Prefab == Garmazerstwo.Prefab(source)",
+              "Garmazerstwo.AddSpice(simulated, source",
               "foreach (var item in group.Targets)", "Garmazerstwo.Key] = group.Result",
               "Garmazerstwo.AwardSpiceXp(plan.ConsumedCount)",
               "CheckAccessMethod.Invoke","PrivateArea.CheckAccess",
@@ -46,4 +46,4 @@ assert score(75,28,0,2)>=.85*base
 assert score(20,15,0,1)<.85*base
 assert [i%2 for i in range(5)]==[0,1,0,1,0]
 assert sum([i%3==j for i in range(1000) for j in range(3)])==1000
-print("PASS: 0.4.8 guarded mixing, 85% base ranking, full-stack seasoning, UI isolation.")
+print("PASS: 0.4.9 guarded mixing, 85% base ranking, full-stack seasoning, UI isolation.")
