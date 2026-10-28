@@ -76,6 +76,13 @@ namespace Sirroh.SkillsAddon
             if (string.Equals(Garmazerstwo.Prefab(src), Garmazerstwo.Prefab(dst),
                     StringComparison.Ordinal)) return true;
 
+            // No modal and, importantly, no ingredient loss for mastered food.
+            if (Garmazerstwo.IsMaster(dst))
+            {
+                Notify("Mistrza Kuchni: ten posiłek osiągnął limit +200% przyprawiania.");
+                return false;
+            }
+
             // Only DIFFERENT food types invoke the seasoning confirmation.
             int dragCount = Convert.ToInt32(DragAmount.GetValue(gui));
             int count = Mathf.Min(dst.m_stack, Mathf.Min(src.m_stack, dragCount));
@@ -158,7 +165,7 @@ namespace Sirroh.SkillsAddon
             var record = Garmazerstwo.Default(b);
             if (!Garmazerstwo.AddSpice(record, a, b, Garmazerstwo.SkillLevel(Player.m_localPlayer)))
             {
-                Notify("Nie udało się obliczyć przyprawienia. Nic nie zużyto.");
+                Notify("Przyprawianie nie zwiększy statystyk lub posiłek osiągnął limit +200%. Nic nie zużyto.");
                 return;
             }
             string result = Garmazerstwo.Serialize(record);
