@@ -68,6 +68,35 @@ else
 }
 
 
+string[][] foodTargets =
+{
+    new[] { "Player", "Load", "EatFood", "GetTotalFoodValue", "UseStamina", "UseEitr", "Jump", "GetJogSpeedFactor", "GetRunSpeedFactor", "GetSwimSpeedFactor", "GetFood" },
+    new[] { "CookingStation", "OnInteract", "SpawnItem", "RPC_RemoveDoneItem", "GetSlot", "IsItemDone" },
+    new[] { "InventoryGrid", "OnLeftDown", "GetButtonPos" },
+    new[] { "Inventory", "AddItem", "FindFreeStackItem", "MoveItemToThis", "Changed" },
+    new[] { "ItemDrop/ItemData", "IsSameType", "GetTooltip" },
+    new[] { "Tameable", "DecreaseRemainingTime", "UpdateTaming" },
+};
+foreach (var target in foodTargets)
+{
+    var ty = assembly.MainModule.Types.SelectMany(Descend)
+        .FirstOrDefault(t => t.FullName.Replace("/", "/") == target[0] || t.Name == target[0]);
+    if (ty == null) { Console.WriteLine("FOOD PROBE TYPE MISSING " + target[0]); continue; }
+    foreach (var name in target.Skip(1))
+    {
+        var ms = ty.Methods.Where(m => m.Name == name).ToList();
+        Console.WriteLine("FOOD PROBE " + target[0] + "." + name + ": " +
+            (ms.Count == 0 ? "MISSING" : string.Join(" | ", ms.Select(m => "(" +
+                string.Join(", ", m.Parameters.Select(p => p.ParameterType.Name + " " + p.Name)) +
+                ") -> " + m.ReturnType.Name))));
+    }
+}
+var foodType = assembly.MainModule.Types.SelectMany(Descend)
+    .FirstOrDefault(t => t.FullName == "Player/Food" || t.Name == "Food");
+if (foodType != null)
+    foreach (var fld in foodType.Fields)
+        Console.WriteLine("FOOD FIELD " + fld.Name + " " + fld.FieldType.Name);
+
 if (args.Length > 1 && System.IO.File.Exists(args[1]))
 {
     using var bep = AssemblyDefinition.ReadAssembly(args[1]);
