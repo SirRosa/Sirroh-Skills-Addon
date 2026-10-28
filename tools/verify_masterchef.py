@@ -24,7 +24,12 @@ assert "data.Stamina = nextStamina;" in food
 assert "data.Eitr = nextEitr;" in food
 assert "data.HpRegen = Mathf.Clamp(data.HpRegen + sourceBaseRegen * .20f" in food
 assert "NormalizeMaster(data, target);" in food
-assert "if (IsMaster(data, item) && lines.Length > 0" in food
+assert "if (IsMaster(data, item) && lines.Length > 0" not in food
+assert "lines[0] += MasterSuffix" not in food
+assert '"CreateItemTooltip", new[] { typeof(ItemDrop.ItemData), typeof(UITooltip) }' in food
+assert "TooltipTitle(InventoryGrid __instance," in food
+assert "topic + MasterSuffix, tooltip.m_text, anchor, Vector2.zero" in food
+assert "InventoryTooltipAnchor.GetValue(__instance)" in food
 assert "Serialize(aRecord) == Serialize(bRecord)" in food
 assert "if (Garmazerstwo.IsMaster(dst))" in spice
 assert "if (!Garmazerstwo.AddSpice(record, a, b," in spice
