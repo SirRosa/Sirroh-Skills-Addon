@@ -17,17 +17,42 @@ csproj = Path("SirrohSkillsAddon.csproj").read_text(encoding="utf-8")
 workflow = Path(".github/workflows/build.yml").read_text(encoding="utf-8")
 manifest = json.loads(Path("manifest.json").read_text(encoding="utf-8"))
 
-assert manifest["version_number"] == "0.4.2"
-assert 'internal const string Version = "0.4.2"' in plugin
+assert manifest["version_number"] == "0.4.3"
+assert 'internal const string Version = "0.4.3"' in plugin
 assert 'Identifier = Guid + ".garmazerstwo"' in plugin
 assert 'Identifier = "neithar.Slayer"' in plugin
 assert 'Identifier = Guid + ".zawadiaka"' in plugin
 assert "Garmazerstwo.Install(harmony)" in plugin
 assert "BlacksmithingPolish.Install(harmony)" in plugin
-assert 'if (data == null || data.Spices.Count >= 5) return false;' in food
-assert 'data.Spices.Add(spice);' in food
+assert 'if (data == null || data.Stars >= 5 || !IsFood(source)) return false;' in food
+assert 'data.Stars++;' in food
+assert 'data.Hp += bonusHp;' in food
+assert 'data.Stamina += bonusStamina;' in food
+assert 'data.Eitr += bonusEitr;' in food
+assert 'Effective(source, out float hp, out float stamina, out float eitr,' in food
+assert 'data.Level = Mathf.RoundToInt(Mathf.Clamp(skillLevel, 0f, 100f));' in food
+assert 'data.CookPercent = CookPercentage(skillLevel);' in food
+assert 'if (parts[0] != "v1" || parts.Length > 10) return null;' in food
+assert 'if (parts[0] == "v2")' in food
+assert 'return string.Join("|", new[] { "v2",' in food
+assert 'data.Spices' not in food + spices
+assert 'record.Stars >= 5' in spices
+assert 'Garmazerstwo.AddSpice(record, a, b,' in spices
+assert 'Garmazerstwo.Serialize(record)' in spices
 assert 'float percent = .05f + .05f * Mathf.Clamp01(level / 100f);' in food
 assert 'Mathf.Max(1f, Mathf.Round(' in food
+assert 'lines[i] = ReplaceFirstValue(lines[i], hp)' in food
+assert 'lines[i] = ReplaceFirstValue(lines[i], stamina)' in food
+assert 'lines[i] = ReplaceFirstValue(lines[i], eitr)' in food
+assert 'Ugotowano na poziomie ' not in food
+assert 'Statystyki posiłku: HP ' not in food
+assert 'Przyprawienie: ' not in food
+stars = (root / "GarmazerstwoStars.cs").read_text(encoding="utf-8")
+assert 'HarmonyPatch(typeof(InventoryGrid), "UpdateGui")' in stars
+assert '___m_elements' in stars and '___m_inventory' in stars
+assert 'TextMeshProUGUI' in stars
+assert 'string mark = "★" + stars;' in stars
+assert '.m_quality =' not in stars
 assert '"sirroh.skillsaddon.garmazerstwo.food.v1"' in food
 assert 'm_customData[Key] = Serialize(data)' in food
 assert re.search(r"\bm_shared\s*=(?!=)", food + effects + spices) is None
@@ -53,7 +78,7 @@ for icon in ["bron_dwureczna", "lowca_glow", "garmazerstwo", "kuznictwo"]:
     assert f'sirroh.icons.{icon}.png' in icons
 assert "branches: [main, 'test/**']" in workflow
 assert "if: github.ref == 'refs/heads/main'" in workflow
-print("PASS: 0.4.0 isolated features, five independent spices, food metadata, four original icons, main-only publishing.")
+print("PASS: 0.4.3 aggregated v2 seasoning, v1 migration, refreshed skill level, compact native tooltip, inventory star count.")
 
 # Packaging identity must not break existing Thunderstore updates.
 import struct

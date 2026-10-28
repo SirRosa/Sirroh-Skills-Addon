@@ -1,6 +1,6 @@
 # Sirroh Skills [Addon]
 
-## Wersja testowa 0.4.2 — kosmetyczna poprawka nazwy i ikony
+## Wersja testowa 0.4.3 — kompaktowy tooltip i przyprawianie przygotowanymi posiłkami
 
 **Identyfikacja w Gale:** nazwa pakietu to `Sirroh_Skills_Addon`, wyświetlana najczęściej jako „Sirroh Skills Addon” (Thunderstore nie akceptuje nawiasów kwadratowych w technicznej nazwie). **Nazwa BepInEx:** `Sirroh Skills [Addon]`. Ikona: oryginalna tarcza SirRo, 256×256 px. **Ważne:** przed instalacją usuń dawny lokalny pakiet `SirrohSkillsAddon` z profilu Gale, inaczej mogą znaleźć się w nim dwie kopie identycznej DLL. Mod zachowuje GUID `sirroh.skills.addon` oraz wszystkie identyfikatory skilli, konfigurację i zapis. Graficzny zasób pozostał bez zmian w porównaniu z poprawnym archiwum 0.4.1.
 
@@ -10,9 +10,9 @@
 - **Kolos**: oryginalny identyfikator `neithar.Slayer`, użytkownika ikona Broń Dwuręczna.
 - **Łowca Głów**: zachowany istniejący system punktów, bez dodatkowej sztucznej umiejętności; plik ikony trofeów jest osadzony, lecz nie zastępuje zwykłych ikon trofeów.
 - **Garmażerstwo**: nowy skill `sirroh.skills.addon.garmazerstwo`, +0–20% statystyk gotowanego jedzenia i do +10% z serii Gotowania, od poziomu 75 jeden losowy dodatkowy efekt.
-- **Przyprawianie**: upuszczenie posiłku A na B w ekwipunku, natywne potwierdzenie Tak/Nie, zużycie 1:1. Każde z maksymalnie pięciu przyprawień zachowuje osobny zapis i przenosi 5–10% oryginalnych statystyk posiłku A (minimum +1 dla obecnej statystyki). Ponowne przyprawienie tym samym posiłkiem dodaje następny bonus.
+- **Przyprawianie**: upuszczenie posiłku A na B w ekwipunku, natywne potwierdzenie Tak/Nie, zużycie 1:1. Każde z maksymalnie pięciu przyprawień zwiększa sumaryczne statystyki posiłku B o 5–10% **rzeczywistych statystyk przygotowanego posiłku A** (minimum +1 dla obecnej statystyki). Posiłek A może być wcześniej przyprawiony; jego 5 gwiazdek nie przenosi się na B, które otrzymuje jedną nową gwiazdkę. Po przyprawieniu poziom gotowania i procent bazowej premii B aktualizują się do obecnego poziomu Garmażerstwa. Dotychczasowe posiłki z zapisem v1 są odczytywane i migrowane przy następnym przyprawieniu.
 - **Stosy**: pełen stos B może być przyprawiony stosami A, gdy A jest co najmniej tyle samo. Częściowe przyprawianie B wymaga najpierw ręcznego rozdzielenia stosu. Jedzenie o różnym `m_customData` nie powinno być łączone.
-- **Zapis**: przyprawy i premie są przechowywane w danych egzemplarza jedzenia, nie w `SharedData`; dla spożytych posiłków działa oddzielny zapis postaci.
+- **Zapis**: łączna premia HP/staminy/Eitr i regeneracji oraz liczba gwiazdek są zapisane w danych egzemplarza jedzenia, nie w `SharedData`. Nie zapisujemy już nazw ani historii pojedynczych przypraw. Podstawowe linie tooltipu („Życie”, „Kondycja”, „Eitr”, „Leczenie”) pokazują ulepszone wartości; na ikonie jest nakładka ★1…★5. Dla spożytych posiłków działa oddzielny zapis postaci.
 
 **Przed potwierdzeniem stabilności wymagane testy w grze:** czysty profil, uruchomienie wraz z Overhaul, gotowanie/seryjne gotowanie, losowania 75/100, przyprawianie 1:1 i 10:10, pięć gwiazdek, zapis/relog, aktywne jedzenie, QuickStack/Sort/Restock z QOL, ExtraSlots, Blacksmithing 1.2.4, multiplayer/dedicated server. Kompilacja i statyczne testy API nie dowodzą pełnej zgodności rozgrywki.
 
