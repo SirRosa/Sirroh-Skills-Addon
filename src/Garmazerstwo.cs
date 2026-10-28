@@ -28,15 +28,14 @@ namespace Sirroh.SkillsAddon
         private static float lastCookTime;
         private static MethodInfo getTooltip;
 
-        // v2: one aggregate per stat, one star per completed seasoning. No source history.
-        // v1 data is still readable and migrated when the item is seasoned again.
+        // v3: aggregated stats without quality/stars or an artificial seasoning limit.
+        // v1/v2 meals are read without dropping previously earned bonuses.
         internal sealed class Food
         {
             internal int Level;
             internal float CookPercent;
             internal string Buff = "";
             internal float BuffValue;
-            internal int Stars;
             internal float Hp, Stamina, Eitr, HpRegen, StaminaRegen, EitrRegen;
         }
 
@@ -95,10 +94,10 @@ namespace Sirroh.SkillsAddon
         internal static string Serialize(Food data)
         {
             // Compact, locale-invariant and deterministic for stack identity checks.
-            return string.Join("|", new[] { "v2",
+            return string.Join("|", new[] { "v3",
                 data.Level.ToString(C), F(data.CookPercent),
                 Uri.EscapeDataString(data.Buff ?? ""), F(data.BuffValue),
-                data.Stars.ToString(C), F(data.Hp), F(data.Stamina), F(data.Eitr),
+                F(data.Hp), F(data.Stamina), F(data.Eitr),
                 F(data.HpRegen), F(data.StaminaRegen), F(data.EitrRegen) });
         }
 
@@ -116,12 +115,22 @@ namespace Sirroh.SkillsAddon
                     Buff = Uri.UnescapeDataString(parts[3]),
                     BuffValue = Mathf.Clamp(ReadFloat(parts[4]), 0f, 1f)
                 };
+                if (parts[0] == "v3" && parts.Length == 11)
+                {
+                    data.Hp = Mathf.Max(0f, ReadFloat(parts[5]));
+                    data.Stamina = Mathf.Max(0f, ReadFloat(parts[6]));
+                    data.Eitr = Mathf.Max(0f, ReadFloat(parts[7]));
+                    data.HpRegen = Mathf.Max(0f, ReadFloat(parts[8]));
+                    data.StaminaRegen = Mathf.Max(0f, ReadFloat(parts[9]));
+                    data.EitrRegen = Mathf.Max(0f, ReadFloat(parts[10]));
+                    return data;
+                }
+                // Historical v2: ignore star count, keep aggregate food stats.
                 if (parts[0] == "v2")
                 {
                     if (parts.Length != 12 ||
-                        !int.TryParse(parts[5], NumberStyles.Integer, C, out int stars) ||
-                        stars < 0 || stars > 5) return null;
-                    data.Stars = stars;
+                        !int.TryParse(parts[5], NumberStyles.Integer, C, out int oldStars) ||
+                        oldStars < 0 || oldStars > 5) return null;
                     data.Hp = Mathf.Max(0f, ReadFloat(parts[6]));
                     data.Stamina = Mathf.Max(0f, ReadFloat(parts[7]));
                     data.Eitr = Mathf.Max(0f, ReadFloat(parts[8]));
@@ -136,7 +145,6 @@ namespace Sirroh.SkillsAddon
                 {
                     string[] values = parts[i].Split(',');
                     if (values.Length != 7) return null;
-                    data.Stars++;
                     data.Hp += Mathf.Max(0f, ReadFloat(values[1]));
                     data.Stamina += Mathf.Max(0f, ReadFloat(values[2]));
                     data.Eitr += Mathf.Max(0f, ReadFloat(values[3]));
@@ -248,16 +256,18 @@ namespace Sirroh.SkillsAddon
             hp = d.m_food * multiplier + (record?.Hp ?? 0f);
             stamina = d.m_foodStamina * multiplier + (record?.Stamina ?? 0f);
             eitr = d.m_foodEitr * multiplier + (record?.Eitr ?? 0f);
-            regenHp = d.m_foodRegen + (record?.HpRegen ?? 0f);
+            // Strict 2x base regeneration cap, including historical overpowered food.
+            regenHp = d.m_foodRegen + Mathf.Clamp(record?.HpRegen ?? 0f,
+                0f, Mathf.Max(0f, d.m_foodRegen));
             regenStamina = record?.StaminaRegen ?? 0f;
             regenEitr = record?.EitrRegen ?? 0f;
         }
 
         internal static bool AddSpice(Food data, ItemDrop.ItemData source, ItemDrop.ItemData target, float skillLevel)
         {
-            if (data == null || data.Stars >= 5 || !IsFood(source)) return false;
-            // Read the *fully prepared* source. A five-star ingredient adds one
-            // star to the target, but its strengthened numbers are transferred.
+            if (data == null || !IsFood(source) || !IsFood(target)) return false;
+            // Reuse the fully prepared source's HP, stamina and Eitr. Each
+            // seasoning is unlimited and remains a single additive operation.
             Effective(source, out float hp, out float stamina, out float eitr,
                 out float hpRegen, out float staminaRegen, out float eitrRegen);
             float percent = .05f + .05f * Mathf.Clamp01(skillLevel / 100f);
@@ -267,15 +277,20 @@ namespace Sirroh.SkillsAddon
             data.Hp += bonusHp;
             data.Stamina += bonusStamina;
             data.Eitr += bonusEitr;
-            if (hpRegen > 0f)
-                data.HpRegen += Mathf.Max(1f, Mathf.Round(hpRegen * percent));
+            // HP regeneration is deliberately different from the other stats:
+            // a fixed 20% of the ingredient's BASE regen, never minimum +1.
+            // The target can gain at most its own base regen as an extra bonus,
+            // i.e. effective total regeneration is never over 200% of base.
+            float sourceBaseRegen = Mathf.Max(0f, source.m_shared.m_foodRegen);
+            float targetBaseRegen = Mathf.Max(0f, target.m_shared.m_foodRegen);
+            data.HpRegen = Mathf.Clamp(data.HpRegen + sourceBaseRegen * .20f,
+                0f, targetBaseRegen);
             if (stamina > 0f)
                 data.StaminaRegen += Mathf.Max(1f, Mathf.Round(
                     staminaRegen * percent + bonusStamina * .1f));
             if (eitr > 0f)
                 data.EitrRegen += Mathf.Max(1f, Mathf.Round(
                     eitrRegen * percent + bonusEitr * .1f));
-            data.Stars++;
             // Seasoning refreshes the *target's* cooking level and its base bonus,
             // even when the target was originally prepared at level zero.
             data.Level = Mathf.RoundToInt(Mathf.Clamp(skillLevel, 0f, 100f));
