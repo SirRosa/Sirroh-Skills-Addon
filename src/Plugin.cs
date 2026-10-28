@@ -20,10 +20,11 @@ namespace Sirroh.SkillsAddon
     {
         internal const string Guid = "sirroh.skills.addon";
         internal const string OverhaulGuid = "sirro.valheim.pracafizyczna";
-        internal const string Version = "0.3.1";
+        internal const string Version = "0.4.0";
         internal static Plugin Instance;
         internal static Skills.SkillType SlayerType;
         internal static Skills.SkillType BrawlerType;
+        internal static Skills.SkillType GarmazerstwoType;
         private Harmony harmony;
 
         internal static bool HasOverhaul =>
@@ -38,13 +39,14 @@ namespace Sirroh.SkillsAddon
             SlayerCombat.Configure(Config);
             SlayerTrophies.Configure(Config);
             BlacksmithingBridge.Initialize(Config);
+            Garmazerstwo.Configure(Config);
             SlayerType = SkillManager.Instance.AddSkill(new SkillConfig
             {
                 // Reuse the original ID: existing Slayer level survives the migration.
                 Identifier = "neithar.Slayer",
                 Name = "Kolos",
                 Description = "Siła broni dwuręcznych, ogłuszenie i odporność na odrzut",
-                Icon = SkillArtwork.MakeAxe(),
+                Icon = SuppliedSkillIcons.Kolos(),
                 IncreaseStep = 1f
             });
             BrawlerType = SkillManager.Instance.AddSkill(new SkillConfig
@@ -55,6 +57,15 @@ namespace Sirroh.SkillsAddon
                 Icon = SkillArtwork.MakeDagger(),
                 IncreaseStep = 1f
             });
+            GarmazerstwoType = SkillManager.Instance.AddSkill(new SkillConfig
+            {
+                Identifier = Guid + ".garmazerstwo",
+                Name = "Garmażerstwo",
+                Description = "Wzmacnianie gotowanych potraw i pięciokrotne przyprawianie jedzeniem",
+                Icon = SuppliedSkillIcons.Garmazerstwo(),
+                IncreaseStep = 1f
+            });
+            Garmazerstwo.SkillType = GarmazerstwoType;
             harmony = new Harmony(Guid);
             // A failed optional Harmony target must not disable other skills.
             foreach (var type in typeof(Plugin).Assembly.GetTypes())
@@ -65,8 +76,9 @@ namespace Sirroh.SkillsAddon
             }
             BlacksmithingBridge.Install(harmony);
             BlacksmithingPolish.Install(harmony);
+            Garmazerstwo.Install(harmony);
             BlacksmithingBridge.Report();
-            LogInfo("Kolos, Zawadiaka and Łowca Głów ready; XP stays in Sirroh Overhaul skill pipeline.");
+            LogInfo("Kolos, Zawadiaka, Łowca Głów and Garmażerstwo ready; XP stays in Sirroh Overhaul skill pipeline.");
         }
 
         private void Start()
@@ -80,12 +92,14 @@ namespace Sirroh.SkillsAddon
         private void Update()
         {
             BlacksmithingPolish.Tick();
+            GarmazerstwoSpicing.Tick();
         }
 
         private void OnDestroy()
         {
             harmony?.UnpatchSelf();
             SlayerTrophies.Clear();
+            GarmazerstwoSpicing.Shutdown();
             BlacksmithingBridge.Clear();
             if (ReferenceEquals(Instance, this)) Instance = null;
         }
