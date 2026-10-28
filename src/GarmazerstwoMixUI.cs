@@ -44,12 +44,19 @@ namespace Sirroh.SkillsAddon
 
         private static void Shown(InventoryGui __instance)
         {
-            _visible = true;
-            Ensure(__instance);
-            // The Unity layout is not guaranteed to be ready inside Show().
-            // Force one safe position pass on the next Update tick instead.
-            _screenW = -1;
-            _screenH = -1;
+            try
+            {
+                _visible = true;
+                Ensure(__instance);
+                // UI layout is not guaranteed to be ready in Show().
+                _screenW = -1;
+                _screenH = -1;
+            }
+            catch (Exception e)
+            {
+                Plugin.Instance?.Warning("Mieszaj UI initialization failed: " + e);
+                Shutdown();
+            }
         }
 
         private static void Hidden()
@@ -389,6 +396,16 @@ namespace Sirroh.SkillsAddon
         internal static void Tick()
         {
             if (_gui == null || _woodRoot == null) return;
+            try { TickSafe(); }
+            catch (Exception e)
+            {
+                Plugin.Instance?.Warning("Mieszaj UI update disabled: " + e);
+                Shutdown();
+            }
+        }
+
+        private static void TickSafe()
+        {
             bool show = _visible && _gui == InventoryGui.instance &&
                 ChestPanel(_gui) != null &&
                 InventoryGui.IsVisible() && _gui.m_player != null &&
