@@ -68,7 +68,7 @@ jobs:
         run: python3 tools/verify_contracts.py
       - name: Verify complete Blacksmithing Polish UI and head-hunter visibility
         run: python3 tools/verify_progress_localization.py
-      - name: Verify Garmazerstwo preservation, five stars, original icons and isolation
+      - name: Verify Garmazerstwo preservation, unlimited seasoning, original icons and isolation
         run: python3 tools/verify_garmazerstwo.py
       - name: Verify optional ZenUI simplified food stat compatibility
         run: python3 tools/verify_zenui_compat.py
@@ -90,7 +90,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: Sirroh_Skills_Addon-v0.4.6
+          name: Sirroh_Skills_Addon-v0.4.7
           path: dist/*.zip
           if-no-files-found: error
 
