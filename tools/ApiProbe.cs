@@ -242,5 +242,37 @@ if (args.Length > 1 && System.IO.File.Exists(args[1]))
     }
 }
 
+// TEMPORARY DIAGNOSTIC: per-item inventory tooltip TITLE on current Valheim references.
+foreach (var typeName in new[] { "InventoryGrid", "InventoryGui" })
+{
+    var ty = assembly.MainModule.Types.FirstOrDefault(t => t.Name == typeName);
+    if (ty == null) continue;
+    foreach (var method in ty.Methods.Where(m =>
+        m.Name == "CreateItemTooltip" || m.Name == "UpdateItemTooltip" ||
+        m.Name == "SetItemTooltip"))
+    {
+        Console.WriteLine("NAME-PROBE METHOD "+ty.Name+"."+method.Name+
+            " RETURN "+method.ReturnType.FullName+" ARGS "+
+            string.Join(",",method.Parameters.Select(x=>x.ParameterType.FullName+" "+x.Name)));
+        if (method.HasBody)
+            foreach (var instruction in method.Body.Instructions.Take(180))
+                Console.WriteLine("NAME-PROBE IL "+instruction);
+    }
+}
+var baseDirectory = System.IO.Path.GetDirectoryName(args[0]);
+var guiutilPath = System.IO.Path.Combine(baseDirectory ?? "", "assembly_guiutils.dll");
+if (System.IO.File.Exists(guiutilPath))
+{
+    using var guiutil = AssemblyDefinition.ReadAssembly(guiutilPath);
+    foreach (var type in guiutil.MainModule.Types.Where(t => t.Name == "UITooltip"))
+    {
+        foreach (var m in type.Methods.Where(m => m.Name == "Set"))
+            Console.WriteLine("NAME-PROBE TOOLTIP SET "+m.Name+"("+
+                string.Join(",",m.Parameters.Select(p=>p.ParameterType.FullName+" "+p.Name))+")");
+        foreach (var fld in type.Fields.Where(f=> f.Name.Contains("topic") || f.Name.Contains("text")))
+            Console.WriteLine("NAME-PROBE TOOLTIP FIELD "+fld.Name+" "+fld.FieldType.FullName);
+    }
+}
+
 if (failures > 0) throw new Exception("Valheim 1.0 runtime target drift: " + failures + " missing methods");
 Console.WriteLine("Harmony target inspection passed.");
