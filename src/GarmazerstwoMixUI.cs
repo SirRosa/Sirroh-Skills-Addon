@@ -91,7 +91,11 @@ namespace Sirroh.SkillsAddon
             if (texture == null || png == null || png.Length == 0) return false;
             try
             {
-                Type t = AccessTools.TypeByName("UnityEngine.ImageConversion");
+                Type t = AccessTools.TypeByName("UnityEngine.ImageConversion")
+                    ?? Type.GetType("UnityEngine.ImageConversion, UnityEngine.ImageConversionModule");
+                if (t == null)
+                    t = Assembly.Load("UnityEngine.ImageConversionModule")
+                        .GetType("UnityEngine.ImageConversion", false);
                 if (t == null) return false;
                 MethodInfo method = t.GetMethod("LoadImage",
                     BindingFlags.Public | BindingFlags.Static, null,
