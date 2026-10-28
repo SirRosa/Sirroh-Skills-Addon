@@ -22,7 +22,7 @@ assert 'int count = Mathf.Min(dst.m_stack, Mathf.Min(src.m_stack, dragCount));' 
 assert 'ItemDrop.ItemData seasoned = b.Clone();' in spice
 assert 'seasoned.m_stack = n;' in spice
 assert 'seasoned.m_customData[Garmazerstwo.Key] = result;' in spice
-assert 'dest.AddItem(seasoned, n, slot.x, slot.y, false)' in spice
+assert 'AddItemAt.Invoke(dest' in spice
 assert 'b.m_stack -= n;' in spice
 assert 'origin.RemoveItem(a, n)' in spice
 assert 'dest.RemoveItem(placed)' in spice
