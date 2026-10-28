@@ -178,12 +178,18 @@ namespace Sirroh.SkillsAddon
                 seasoned.m_customData[Garmazerstwo.Key] = result;
                 // The ingredient is NOT consumed before a valid, separate
                 // stack exists; failure cannot turn the source into nothing.
-                bool inserted = dest.AddItem(seasoned, slot);
-                if (!inserted || !ReferenceEquals(dest.GetItemAt(slot.x, slot.y), seasoned))
+                // This overload adds exactly n units to the selected cell.
+                // Verified against Valheim 1.0.21 IL: it creates another clone
+                // in the inventory, so do NOT test reference equality with the
+                // supplied (consumed) ItemData object.
+                bool inserted = dest.AddItem(seasoned, n, slot.x, slot.y, false);
+                ItemDrop.ItemData placed = dest.GetItemAt(slot.x, slot.y);
+                if (!inserted || placed == null || placed.m_stack != n ||
+                    Fingerprint(placed) != result)
                 {
-                    // Defensive cleanup if AddItem reported failure after placing.
-                    if (ReferenceEquals(dest.GetItemAt(slot.x, slot.y), seasoned))
-                        dest.RemoveItem(seasoned);
+                    // Never remove a pre-existing item from an occupied slot.
+                    if (inserted && placed != null && Fingerprint(placed) == result)
+                        dest.RemoveItem(placed);
                     Notify("Nie udało się wydzielić przyprawionego stosu. Nic nie zużyto.");
                     return;
                 }
@@ -194,7 +200,7 @@ namespace Sirroh.SkillsAddon
                     // Transaction rollback: restore original B and remove the
                     // newly created stack; source A was not consumed.
                     b.m_stack += n;
-                    dest.RemoveItem(seasoned);
+                    dest.RemoveItem(placed);
                     try { Changed?.Invoke(dest, new object[] { false, false }); }
                     catch (Exception) { }
                     Notify("Nie udało się zużyć przyprawy. Przywrócono poprzednie stosy.");
