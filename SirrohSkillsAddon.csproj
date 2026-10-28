@@ -11,6 +11,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src/**/*.cs" />
+    <EmbeddedResource Include="assets/skill_icons/bron_dwureczna.png" LogicalName="sirroh.icons.bron_dwureczna.png" />
+    <EmbeddedResource Include="assets/skill_icons/lowca_glow.png" LogicalName="sirroh.icons.lowca_glow.png" />
+    <EmbeddedResource Include="assets/skill_icons/kuznictwo.png" LogicalName="sirroh.icons.kuznictwo.png" />
+    <EmbeddedResource Include="assets/skill_icons/garmazerstwo.png" LogicalName="sirroh.icons.garmazerstwo.png" />
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
     <Reference Include="assembly_valheim"><HintPath>$(ReferenceDir)/assembly_valheim.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="assembly_guiutils"><HintPath>$(ReferenceDir)/assembly_guiutils.dll</HintPath><Private>false</Private></Reference>
@@ -18,6 +22,7 @@
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(ReferenceDir)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine"><HintPath>$(ReferenceDir)/UnityEngine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.UI"><HintPath>$(ReferenceDir)/UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.ImageConversionModule"><HintPath>$(ReferenceDir)/UnityEngine.ImageConversionModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.UIModule"><HintPath>$(ReferenceDir)/UnityEngine.UIModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Unity.TextMeshPro"><HintPath>$(ReferenceDir)/Unity.TextMeshPro.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="BepInEx"><HintPath>$(ReferenceDir)/BepInEx.dll</HintPath><Private>false</Private></Reference>
