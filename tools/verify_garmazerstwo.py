@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Static safety contracts for the 0.4.0 experimental Garmażerstwo branch."""
 import json
+import re
 from pathlib import Path
 
 root = Path("src")
@@ -29,8 +30,8 @@ assert 'float percent = .05f + .05f * Mathf.Clamp01(level / 100f);' in food
 assert 'Mathf.Max(1f, Mathf.Round(' in food
 assert '"sirroh.skillsaddon.garmazerstwo.food.v1"' in food
 assert 'm_customData[Key] = Serialize(data)' in food
-assert 'm_shared =' not in food + effects + spices
-assert 'm_quality =' not in food + effects + spices
+assert re.search(r"\bm_shared\s*=(?!=)", food + effects + spices) is None
+assert re.search(r"\bm_quality\s*=(?!=)", food + effects + spices) is None
 assert 'UnifiedPopup.Push(new YesNoPopup(' in spices
 assert 'if (!origin.RemoveItem(a, n))' in spices
 assert 'ReferenceEquals(origin.GetItemAt(aPos.x, aPos.y), a)' in spices
