@@ -15,6 +15,9 @@ namespace Sirroh.SkillsAddon
     internal static class Garmazerstwo
     {
         internal const string Key = "sirroh.skillsaddon.garmazerstwo.food.v1";
+        internal const float SpiceMaxMultiplier = 2f;
+        internal const string MasterSuffix = " Mistrza Kuchni";
+        private const float MasterTolerance = .0001f;
         internal static Skills.SkillType SkillType;
         internal static ConfigEntry<bool> Enabled;
         internal static ConfigEntry<float> XpCook, XpSpice, CookMax, StreakMax;
@@ -46,8 +49,8 @@ namespace Sirroh.SkillsAddon
                 new ConfigDescription("Doświadczenie za ugotowany posiłek.", new AcceptableValueRange<float>(0f, 20f)));
             XpSpice = cfg.Bind("Garmażerstwo", "XPPerSpice", 5f,
                 new ConfigDescription("Doświadczenie za jedno udane przyprawienie.", new AcceptableValueRange<float>(0f, 100f)));
-            CookMax = cfg.Bind("Garmażerstwo", "FoodBonusAt100", 20f,
-                new ConfigDescription("Procent bazowych statystyk posiłku przy poziomie 100.", new AcceptableValueRange<float>(0f, 50f)));
+            CookMax = cfg.Bind("Garmażerstwo", "FoodBonusAt100_v2", 100f,
+                new ConfigDescription("Procentowy bonus gotowania na poziomie 100. Nowy klucz zapewnia +100% również w już istniejących konfiguracjach.", new AcceptableValueRange<float>(0f, 100f)));
             StreakMax = cfg.Bind("Garmażerstwo", "StreakFoodBonusAt100", 10f,
                 new ConfigDescription("Maksymalna dodatkowa premia z serii gotowania na poziomie 100.", new AcceptableValueRange<float>(0f, 30f)));
         }
@@ -243,7 +246,51 @@ namespace Sirroh.SkillsAddon
         {
             level = Mathf.Clamp(level, 0f, 100f);
             float streak = Mathf.Clamp01((EffectiveCookingStreak() - 1f) / 10f);
-            return level / 100f * (CookMax.Value + StreakMax.Value * streak) / 100f;
+            return Mathf.Clamp01(level / 100f * (CookMax.Value + StreakMax.Value * streak) / 100f);
+        }
+
+        // +100% cooking and +200% seasoning are separate: max total +300%.
+        internal static float SpiceLimit(float vanilla) =>
+            Mathf.Max(0f, vanilla) * SpiceMaxMultiplier;
+
+        internal static void ClampSeasoning(Food data, ItemDrop.ItemData item)
+        {
+            if (data == null || item?.m_shared == null) return;
+            var d = item.m_shared;
+            data.Hp = Mathf.Clamp(data.Hp, 0f, SpiceLimit(d.m_food));
+            data.Stamina = Mathf.Clamp(data.Stamina, 0f, SpiceLimit(d.m_foodStamina));
+            data.Eitr = Mathf.Clamp(data.Eitr, 0f, SpiceLimit(d.m_foodEitr));
+            data.HpRegen = Mathf.Clamp(data.HpRegen, 0f, Mathf.Max(0f, d.m_foodRegen));
+        }
+
+        internal static bool IsMaster(Food data, ItemDrop.ItemData item)
+        {
+            if (data == null || !IsFood(item)) return false;
+            var d = item.m_shared;
+            return (d.m_food <= 0f || data.Hp >= SpiceLimit(d.m_food) - MasterTolerance) &&
+                   (d.m_foodStamina <= 0f || data.Stamina >= SpiceLimit(d.m_foodStamina) - MasterTolerance) &&
+                   (d.m_foodEitr <= 0f || data.Eitr >= SpiceLimit(d.m_foodEitr) - MasterTolerance);
+        }
+
+        internal static bool IsMaster(ItemDrop.ItemData item) =>
+            IsMaster(Read(item), item);
+
+        internal static void NormalizeMaster(Food data, ItemDrop.ItemData item)
+        {
+            ClampSeasoning(data, item);
+            if (!IsMaster(data, item)) return;
+            var d = item.m_shared;
+            // Normalise ALL seasoning contributions of mastered copies of
+            // the same recipe: differing spices cannot split their stacks.
+            // Cooking skill level / unique cooking Buff stay independent.
+            data.Hp = SpiceLimit(d.m_food);
+            data.Stamina = SpiceLimit(d.m_foodStamina);
+            data.Eitr = SpiceLimit(d.m_foodEitr);
+            // Bounded, deterministic secondary effects for the finished meal.
+            // This is necessary for two mastered recipes to share item identity.
+            data.HpRegen = Mathf.Max(0f, d.m_foodRegen) * .2f;
+            data.StaminaRegen = Mathf.Min(1f, Mathf.Max(0f, d.m_foodStamina) * .02f);
+            data.EitrRegen = Mathf.Min(1f, Mathf.Max(0f, d.m_foodEitr) * .02f);
         }
 
         internal static void Effective(ItemDrop.ItemData item, out float hp,
@@ -252,35 +299,46 @@ namespace Sirroh.SkillsAddon
         {
             var d = item.m_shared;
             var record = Read(item);
-            float multiplier = 1f + (record?.CookPercent ?? 0f);
-            hp = d.m_food * multiplier + (record?.Hp ?? 0f);
-            stamina = d.m_foodStamina * multiplier + (record?.Stamina ?? 0f);
-            eitr = d.m_foodEitr * multiplier + (record?.Eitr ?? 0f);
-            // Strict 2x base regeneration cap, including historical overpowered food.
+            float multiplier = 1f + Mathf.Clamp01(record?.CookPercent ?? 0f);
+            hp = d.m_food * multiplier +
+                Mathf.Clamp(record?.Hp ?? 0f, 0f, SpiceLimit(d.m_food));
+            stamina = d.m_foodStamina * multiplier +
+                Mathf.Clamp(record?.Stamina ?? 0f, 0f, SpiceLimit(d.m_foodStamina));
+            eitr = d.m_foodEitr * multiplier +
+                Mathf.Clamp(record?.Eitr ?? 0f, 0f, SpiceLimit(d.m_foodEitr));
             regenHp = d.m_foodRegen + Mathf.Clamp(record?.HpRegen ?? 0f,
                 0f, Mathf.Max(0f, d.m_foodRegen));
             regenStamina = record?.StaminaRegen ?? 0f;
             regenEitr = record?.EitrRegen ?? 0f;
         }
 
-        internal static bool AddSpice(Food data, ItemDrop.ItemData source, ItemDrop.ItemData target, float skillLevel)
+        internal static bool AddSpice(Food data, ItemDrop.ItemData source,
+            ItemDrop.ItemData target, float skillLevel)
         {
             if (data == null || !IsFood(source) || !IsFood(target)) return false;
-            // Reuse the fully prepared source's HP, stamina and Eitr. Each
-            // seasoning is unlimited and remains a single additive operation.
+            ClampSeasoning(data, target);
+            if (IsMaster(data, target)) return false;
             Effective(source, out float hp, out float stamina, out float eitr,
-                out float hpRegen, out float staminaRegen, out float eitrRegen);
+                out _, out float staminaRegen, out float eitrRegen);
             float percent = .05f + .05f * Mathf.Clamp01(skillLevel / 100f);
             float bonusHp = hp > 0f ? Mathf.Max(1f, Mathf.Round(hp * percent)) : 0f;
             float bonusStamina = stamina > 0f ? Mathf.Max(1f, Mathf.Round(stamina * percent)) : 0f;
             float bonusEitr = eitr > 0f ? Mathf.Max(1f, Mathf.Round(eitr * percent)) : 0f;
-            data.Hp += bonusHp;
-            data.Stamina += bonusStamina;
-            data.Eitr += bonusEitr;
-            // HP regeneration is deliberately different from the other stats:
-            // a fixed 20% of the ingredient's BASE regen, never minimum +1.
-            // The target can gain at most its own base regen as an extra bonus,
-            // i.e. effective total regeneration is never over 200% of base.
+
+            float nextHp = Mathf.Min(SpiceLimit(target.m_shared.m_food), data.Hp + bonusHp);
+            float nextStamina = Mathf.Min(SpiceLimit(target.m_shared.m_foodStamina),
+                data.Stamina + bonusStamina);
+            float nextEitr = Mathf.Min(SpiceLimit(target.m_shared.m_foodEitr),
+                data.Eitr + bonusEitr);
+            if (nextHp <= data.Hp + MasterTolerance &&
+                nextStamina <= data.Stamina + MasterTolerance &&
+                nextEitr <= data.Eitr + MasterTolerance) return false;
+            data.Hp = nextHp;
+            data.Stamina = nextStamina;
+            data.Eitr = nextEitr;
+
+            // HP regeneration: 20% of the ingredient's vanilla base, and
+            // never over 2x the target's vanilla regen including base.
             float sourceBaseRegen = Mathf.Max(0f, source.m_shared.m_foodRegen);
             float targetBaseRegen = Mathf.Max(0f, target.m_shared.m_foodRegen);
             data.HpRegen = Mathf.Clamp(data.HpRegen + sourceBaseRegen * .20f,
@@ -291,19 +349,19 @@ namespace Sirroh.SkillsAddon
             if (eitr > 0f)
                 data.EitrRegen += Mathf.Max(1f, Mathf.Round(
                     eitrRegen * percent + bonusEitr * .1f));
-            // Seasoning refreshes the *target's* cooking level and its base bonus,
-            // even when the target was originally prepared at level zero.
             data.Level = Mathf.RoundToInt(Mathf.Clamp(skillLevel, 0f, 100f));
             data.CookPercent = CookPercentage(skillLevel);
-            // Do not reroll an existing special effect on every seasoning.
             if (string.IsNullOrEmpty(data.Buff) && skillLevel >= 75f)
                 data.Buff = RollBuff(target, out data.BuffValue);
+            NormalizeMaster(data, target);
             return true;
         }
 
         internal static Food Default(ItemDrop.ItemData target)
         {
-            return Read(target) ?? new Food { Level = 0, CookPercent = 0f };
+            var record = Read(target) ?? new Food { Level = 0, CookPercent = 0f };
+            ClampSeasoning(record, target);
+            return record;
         }
 
         internal static void AwardCookingXp(int count)
@@ -353,6 +411,9 @@ namespace Sirroh.SkillsAddon
                 else if (IsStatLine(lines[i], "$item_food_regen", "Leczenie", "Healing"))
                     lines[i] = ReplaceFirstValue(lines[i], heal);
             }
+            if (IsMaster(data, item) && lines.Length > 0 &&
+                !lines[0].Contains(MasterSuffix))
+                lines[0] += MasterSuffix;
             __result = string.Join("\n", lines);
             // One concise line for the updated level; stars are on the item icon.
             __result += "\n<color=#D6B36B>Garmażerstwo: " + data.Level + "</color>";
