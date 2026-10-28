@@ -135,6 +135,26 @@ foreach (var tn in new[] { "InventoryElement", "InventoryGrid", "ItemDrop/ItemDa
             }
     }
 }
+
+foreach (var type in assembly.MainModule.Types.SelectMany(Descend)
+    .Where(t => t.Name == "ItemData" || t.Name == "ItemDrop" ||
+                t.Name == "InventoryGui" || t.Name == "InventoryGrid"))
+    foreach (var method in type.Methods.Where(m => m.HasBody &&
+        (m.Name.Contains("Tooltip") || m.Name.Contains("Food") || m.Name == "UpdateGui")))
+    {
+        Console.WriteLine("FOOD DETAIL METHOD " + type.Name + "." + method.Name);
+        foreach (var instr in method.Body.Instructions.Where(i =>
+            i.OpCode.Code == Mono.Cecil.Cil.Code.Ldstr))
+        {
+            string v = Convert.ToString(instr.Operand);
+            if (!string.IsNullOrEmpty(v) && (v.IndexOf("food", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                v.IndexOf("heal", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                v.IndexOf("stamina", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                v.IndexOf("eitr", StringComparison.OrdinalIgnoreCase) >= 0))
+                Console.WriteLine("FOOD DETAIL KEY " + v.Replace("\\r","\\\\r").Replace("\\n","\\\\n")
+                    .Substring(0, Math.Min(v.Length, 180)));
+        }
+    }
 // Game-version diagnostic: read the currently fetched Steam dedicated server's
 // managed assembly metadata without asserting that it is a tested 1.0.21 client.
 foreach (var vt in assembly.MainModule.Types.Where(t =>
