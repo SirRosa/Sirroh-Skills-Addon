@@ -1,5 +1,12 @@
 # Sirroh Skills [Addon]
 
+## 0.4.7 TEST — te same dania służą do stackowania, nie do przyprawiania
+
+Przeciągnięcie posiłku na **ten sam rodzaj posiłku** omija system przyprawiania (bez okna i bez zużywania dania). Wtedy standardowy ekwipunek Valheim obsługuje przenoszenie i łączenie stacków. Posiłki o **różnych zapisanych premiach Garmażerstwa** nadal nie są scalane: natywne łączenie takich stacków spowodowałoby utratę odrębnych statystyk. Można łączyć tylko zgodne stacki (ten sam rodzaj i te same zapisane bonusy); niezgodne pozostają osobno. Przyprawianie dwoma *różnymi* daniami działa jak w 0.4.6.
+
+Nie zmieniono wzorów regeneracji, automatycznego dzielenia stacków, Kuźnictwa ani ZenUI. BepInEx GUID, identyfikatory skilli i `main` pozostają bez zmian.
+
+
 ## 0.4.6 TEST — przyprawianie bez limitu, balans regeneracji i rozdzielanie stosów
 
 Usunięto system gwiazdek i limit pięciu przyprawień. Potrawy można przyprawiać bez końca; ich dane zapisują się teraz w zwięzłym formacie v3 (poprzednie v1 i v2 są nadal odczytywane, a premie zachowane). Nie zmieniamy rzeczywistego `ItemData.m_quality`.
