@@ -15,7 +15,7 @@ for token in ("GarmazerstwoMixUI.Install(harmony)", "GarmazerstwoMixUI.Tick()",
               "GarmazerstwoMixing.Shutdown()"):
     assert token in plugin,token
 for token in ("RelativeBaseThreshold = .85f", "GroupBy(Garmazerstwo.Prefab)",
-              "Value(i) >= minimum", "DataSignature(item)", "source.m_stack",
+              "Value(i) >= minimum", "DataSignature(exemplar)", "i.m_stack",
               "plan.Consumed[source]++", "target.Spices.Add(source)",
               "target.Prefab == Garmazerstwo.Prefab(source)",
               "Garmazerstwo.AddSpice(simulated, source",
