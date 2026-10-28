@@ -1,6 +1,9 @@
 # Sirroh Skills [Addon]
 
-## Wersja testowa 0.4.3 — kompaktowy tooltip i przyprawianie przygotowanymi posiłkami
+## Wersja testowa 0.4.4 — naprawa istniejących wartości jedzenia i natywnego licznika jakości
+
+**Naprawa UI Valheim 1.0.21:** silnik generuje najpierw klucze lokalizacji jedzenia (`$item_food_health`, `$item_food_stamina`, `$item_food_eitr`, `$item_food_regen`), a dopiero później wyświetla polskie etykiety. Poprawione wartości wpisywane są bezpośrednio w te cztery oryginalne linie. Jedynym osobnym dopiskiem pozostaje krótki poziom Garmażerstwa i ewentualny buff od poziomu 75. **Wskaźnik 1–5 przyprawień wykorzystuje istniejącą cyfrę jakości przedmiotu na ikonie**, bez dodatkowych warstw UI i bez modyfikacji właściwego poziomu jakości Valheim. Wartości oraz liczba przypraw nie były utracone w 0.4.3; naprawa dotyczy ich prezentacji.
+
 
 **Identyfikacja w Gale:** nazwa pakietu to `Sirroh_Skills_Addon`, wyświetlana najczęściej jako „Sirroh Skills Addon” (Thunderstore nie akceptuje nawiasów kwadratowych w technicznej nazwie). **Nazwa BepInEx:** `Sirroh Skills [Addon]`. Ikona: oryginalna tarcza SirRo, 256×256 px. **Ważne:** przed instalacją usuń dawny lokalny pakiet `SirrohSkillsAddon` z profilu Gale, inaczej mogą znaleźć się w nim dwie kopie identycznej DLL. Mod zachowuje GUID `sirroh.skills.addon` oraz wszystkie identyfikatory skilli, konfigurację i zapis. Graficzny zasób pozostał bez zmian w porównaniu z poprawnym archiwum 0.4.1.
 
@@ -12,7 +15,7 @@
 - **Garmażerstwo**: nowy skill `sirroh.skills.addon.garmazerstwo`, +0–20% statystyk gotowanego jedzenia i do +10% z serii Gotowania, od poziomu 75 jeden losowy dodatkowy efekt.
 - **Przyprawianie**: upuszczenie posiłku A na B w ekwipunku, natywne potwierdzenie Tak/Nie, zużycie 1:1. Każde z maksymalnie pięciu przyprawień zwiększa sumaryczne statystyki posiłku B o 5–10% **rzeczywistych statystyk przygotowanego posiłku A** (minimum +1 dla obecnej statystyki). Posiłek A może być wcześniej przyprawiony; jego 5 gwiazdek nie przenosi się na B, które otrzymuje jedną nową gwiazdkę. Po przyprawieniu poziom gotowania i procent bazowej premii B aktualizują się do obecnego poziomu Garmażerstwa. Dotychczasowe posiłki z zapisem v1 są odczytywane i migrowane przy następnym przyprawieniu.
 - **Stosy**: pełen stos B może być przyprawiony stosami A, gdy A jest co najmniej tyle samo. Częściowe przyprawianie B wymaga najpierw ręcznego rozdzielenia stosu. Jedzenie o różnym `m_customData` nie powinno być łączone.
-- **Zapis**: łączna premia HP/staminy/Eitr i regeneracji oraz liczba gwiazdek są zapisane w danych egzemplarza jedzenia, nie w `SharedData`. Nie zapisujemy już nazw ani historii pojedynczych przypraw. Podstawowe linie tooltipu („Życie”, „Kondycja”, „Eitr”, „Leczenie”) pokazują ulepszone wartości; na ikonie jest nakładka ★1…★5. Dla spożytych posiłków działa oddzielny zapis postaci.
+- **Zapis**: łączna premia HP/staminy/Eitr i regeneracji oraz liczba gwiazdek są zapisane w danych egzemplarza jedzenia, nie w `SharedData`. Nie zapisujemy już nazw ani historii pojedynczych przypraw. Podstawowe linie tooltipu („Życie”, „Kondycja”, „Eitr”, „Leczenie”) pokazują ulepszone wartości; na ikonie jest natywna liczba jakości 1–5. Dla spożytych posiłków działa oddzielny zapis postaci.
 
 **Przed potwierdzeniem stabilności wymagane testy w grze:** czysty profil, uruchomienie wraz z Overhaul, gotowanie/seryjne gotowanie, losowania 75/100, przyprawianie 1:1 i 10:10, pięć gwiazdek, zapis/relog, aktywne jedzenie, QuickStack/Sort/Restock z QOL, ExtraSlots, Blacksmithing 1.2.4, multiplayer/dedicated server. Kompilacja i statyczne testy API nie dowodzą pełnej zgodności rozgrywki.
 

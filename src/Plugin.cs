@@ -20,7 +20,7 @@ namespace Sirroh.SkillsAddon
     {
         internal const string Guid = "sirroh.skills.addon";
         internal const string OverhaulGuid = "sirro.valheim.pracafizyczna";
-        internal const string Version = "0.4.3";
+        internal const string Version = "0.4.4";
         internal static Plugin Instance;
         internal static Skills.SkillType SlayerType;
         internal static Skills.SkillType BrawlerType;

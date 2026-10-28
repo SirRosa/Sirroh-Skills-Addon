@@ -86,7 +86,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: Sirroh_Skills_Addon-v0.4.3
+          name: Sirroh_Skills_Addon-v0.4.4
           path: dist/*.zip
           if-no-files-found: error
 

@@ -17,8 +17,8 @@ csproj = Path("SirrohSkillsAddon.csproj").read_text(encoding="utf-8")
 workflow = Path(".github/workflows/build.yml").read_text(encoding="utf-8")
 manifest = json.loads(Path("manifest.json").read_text(encoding="utf-8"))
 
-assert manifest["version_number"] == "0.4.3"
-assert 'internal const string Version = "0.4.3"' in plugin
+assert manifest["version_number"] == "0.4.4"
+assert 'internal const string Version = "0.4.4"' in plugin
 assert 'Identifier = Guid + ".garmazerstwo"' in plugin
 assert 'Identifier = "neithar.Slayer"' in plugin
 assert 'Identifier = Guid + ".zawadiaka"' in plugin
@@ -42,6 +42,12 @@ assert 'Garmazerstwo.Serialize(record)' in spices
 assert 'float percent = .05f + .05f * Mathf.Clamp01(skillLevel / 100f);' in food
 assert 'Mathf.Max(1f, Mathf.Round(' in food
 assert 'lines[i] = ReplaceFirstValue(lines[i], hp)' in food
+for key in ("$item_food_health", "$item_food_stamina", "$item_food_eitr", "$item_food_regen"):
+    assert key in food, "Missing raw Valheim 1.0.21 tooltip token " + key
+assert 'private static bool IsStatLine' in food
+assert 'private static string ReplaceFirstValue' in food
+assert 'string[] lines = __result.Split' in food
+assert 'm_shared.m_food =' not in food
 assert 'lines[i] = ReplaceFirstValue(lines[i], stamina)' in food
 assert 'lines[i] = ReplaceFirstValue(lines[i], eitr)' in food
 assert 'Ugotowano na poziomie ' not in food
@@ -50,8 +56,14 @@ assert 'Przyprawienie: ' not in food
 stars = (root / "GarmazerstwoStars.cs").read_text(encoding="utf-8")
 assert 'HarmonyPatch(typeof(InventoryGrid), "UpdateGui")' in stars
 assert '___m_elements' in stars and '___m_inventory' in stars
-assert 'TextMeshProUGUI' in stars
-assert 'string mark = "★" + stars;' in stars
+assert '.m_quality' in stars
+assert '.m_queued' not in stars
+assert 'stars.ToString(System.Globalization.CultureInfo.InvariantCulture)' in stars
+assert 'counter.gameObject.SetActive(true)' in stars
+assert 'counter.enabled = true' in stars
+assert 'counter.text != value' in stars
+assert 'counter.raycastTarget' not in stars
+assert 'string value = stars.ToString(System.Globalization.CultureInfo.InvariantCulture);' in stars
 assert '.m_quality =' not in stars
 assert '"sirroh.skillsaddon.garmazerstwo.food.v1"' in food
 assert 'm_customData[Key] = Serialize(data)' in food
@@ -78,7 +90,7 @@ for icon in ["bron_dwureczna", "lowca_glow", "garmazerstwo", "kuznictwo"]:
     assert f'sirroh.icons.{icon}.png' in icons
 assert "branches: [main, 'test/**']" in workflow
 assert "if: github.ref == 'refs/heads/main'" in workflow
-print("PASS: 0.4.3 aggregated v2 seasoning, v1 migration, refreshed skill level, compact native tooltip, inventory star count.")
+print("PASS: 0.4.4 aggregated v2 seasoning, v1 migration, refreshed skill level, compact native tooltip, inventory star count.")
 
 # Packaging identity must not break existing Thunderstore updates.
 import struct
