@@ -47,7 +47,7 @@ namespace Sirroh.SkillsAddon
                         rect.offsetMin = rect.offsetMax = Vector2.zero;
                         text = obj.GetComponent<TextMeshProUGUI>();
                         text.raycastTarget = false;
-                        text.enableWordWrapping = false;
+                        text.textWrappingMode = TextWrappingModes.NoWrap;
                         text.fontSize = 15f;
                         text.fontStyle = FontStyles.Bold;
                         text.alignment = TextAlignmentOptions.TopRight;
