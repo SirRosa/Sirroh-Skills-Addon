@@ -105,7 +105,7 @@ jobs:
         run: |
           set -euo pipefail
           version=$(python3 -c 'import json;print(json.load(open("manifest.json"))["version_number"])')
-          archive="dist/SirrohSkillsAddon-${version}.zip"
+          archive="dist/Sirroh_Skills_Addon-${version}.zip"
           test -s "$archive"
           tag="v${version}"
           if gh release view "$tag" >/dev/null 2>&1; then
