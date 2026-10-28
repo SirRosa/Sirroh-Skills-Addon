@@ -30,6 +30,8 @@ namespace Sirroh.SkillsAddon
         private static bool externalStreakChecked;
         private static float lastCookTime;
         private static MethodInfo getTooltip;
+        private static readonly FieldInfo InventoryTooltipAnchor =
+            AccessTools.Field(typeof(InventoryGrid), "m_tooltipAnchor");
 
         // v3: aggregated stats without quality/stars or an artificial seasoning limit.
         // v1/v2 meals are read without dropping previously earned bonuses.
@@ -63,6 +65,16 @@ namespace Sirroh.SkillsAddon
             if (getTooltip != null)
                 harmony.Patch(getTooltip, postfix: new HarmonyMethod(
                     AccessTools.Method(typeof(Garmazerstwo), nameof(Tooltip))) { priority = Priority.Last });
+            // Valheim 1.0.21: InventoryGrid.CreateItemTooltip(item, tooltip)
+            // passes m_shared.m_name to UITooltip.Set as the separate TITLE.
+            // Patch only this presentation call: never change shared prefab
+            // names, per-item data, or the item's description text.
+            var titleMethod = AccessTools.Method(typeof(InventoryGrid),
+                "CreateItemTooltip", new[] { typeof(ItemDrop.ItemData), typeof(UITooltip) });
+            if (titleMethod != null && InventoryTooltipAnchor != null)
+                harmony.Patch(titleMethod, postfix: new HarmonyMethod(
+                    AccessTools.Method(typeof(Garmazerstwo), nameof(TooltipTitle)))
+                    { priority = Priority.Last });
             try { GarmazerstwoSpicing.Install(harmony); }
             catch (Exception e) { Plugin.Instance.Warning("Garmażerstwo: przyprawianie nieaktywne: " + e.Message); }
             try { GarmazerstwoEffects.Install(harmony); }
@@ -438,15 +450,37 @@ namespace Sirroh.SkillsAddon
                 else if (IsStatLine(lines[i], "$item_food_regen", "Leczenie", "Healing"))
                     lines[i] = ReplaceFirstValue(lines[i], heal);
             }
-            if (IsMaster(data, item) && lines.Length > 0 &&
-                !lines[0].Contains(MasterSuffix))
-                lines[0] += MasterSuffix;
             __result = string.Join("\n", lines);
             // One concise line for the updated level; stars are on the item icon.
             __result += "\n<color=#D6B36B>Garmażerstwo: " + data.Level + "</color>";
             if (!string.IsNullOrEmpty(data.Buff) && BuffNames.TryGetValue(data.Buff, out var name))
                 __result += "\n<color=#87CEEB>" + name + ": +" +
                     Mathf.RoundToInt(data.BuffValue * 100f) + "%</color>";
+        }
+
+        // Only the tooltip's headline receives the "Mistrza Kuchni"
+        // suffix. The body remains untouched apart from existing food stats.
+        // The original CreateItemTooltip has already supplied the exact
+        // per-item anchor and description; retain both when updating its title.
+        private static void TooltipTitle(InventoryGrid __instance,
+            ItemDrop.ItemData item, UITooltip tooltip)
+        {
+            if (Enabled?.Value != true || __instance == null || tooltip == null ||
+                item == null || !IsMaster(item)) return;
+            string topic = tooltip.m_topic;
+            if (string.IsNullOrEmpty(topic) ||
+                topic.EndsWith(MasterSuffix, StringComparison.Ordinal)) return;
+            try
+            {
+                var anchor = InventoryTooltipAnchor.GetValue(__instance) as RectTransform;
+                tooltip.Set(topic + MasterSuffix, tooltip.m_text, anchor, Vector2.zero);
+            }
+            catch (Exception e)
+            {
+                // Cosmetic UI must never interrupt an inventory interaction.
+                Plugin.Instance?.Warning("Garmażerstwo: nazwa Mistrza Kuchni: " +
+                    e.GetType().Name);
+            }
         }
 
         private static bool IsStatLine(string raw, params string[] names)
