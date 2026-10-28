@@ -6,7 +6,7 @@ using TMPro;
 namespace Sirroh.SkillsAddon
 {
     // Reuse the quality counter Valheim already positions over each inventory icon.
-    // Only its visible label is changed: m_quality on the item is never modified.
+    // Only its visible label is changed: m_quality on the item is never modified.\n    // Native numeric quality (1-5) avoids missing star glyphs in Valheim fonts.
     [HarmonyPatch(typeof(InventoryGrid), "UpdateGui")]
     internal static class GarmazerstwoStars
     {
@@ -27,7 +27,7 @@ namespace Sirroh.SkillsAddon
                 int stars = record?.Stars ?? 0;
                 // For ordinary items, let the original game own this label.
                 if (stars <= 0) continue;
-                string value = "★" + stars;
+                string value = stars.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 if (counter.text != value) counter.text = value;
                 // Vanilla hides its quality counter on ordinary quality-1 food.
                 // Enable it for seasoned food without creating another UI layer.
