@@ -74,6 +74,8 @@ jobs:
         run: python3 tools/verify_zenui_compat.py
       - name: Verify unlimited seasoning and automatic stack splitting
         run: python3 tools/verify_seasoning_v3.py
+      - name: Verify guarded chest mixing
+        run: python3 tools/verify_mixing.py
       - name: Compile net48 DLL
         run: dotnet build SirrohSkillsAddon.csproj -c Release -p:ReferenceDir="$GITHUB_WORKSPACE/.ci-deps" --nologo
       - name: Assemble Thunderstore package
@@ -90,7 +92,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: Sirroh_Skills_Addon-v0.4.7
+          name: Sirroh_Skills_Addon-v0.4.8
           path: dist/*.zip
           if-no-files-found: error
 
