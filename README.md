@@ -1,3 +1,5 @@
+**Ikony Magii krwi / Magii żywiołów (0.4.10):** po cyklicznym odświeżeniu sprite'ów Overhaul odpowiednie dwa pola `SkillDef.m_icon` dostają zamienione grafiki; korekta jest idempotentna i nie wpływa na poziom, ID ani XP.
+
 **Blacksmithing Expanded — 0.4.10:** Łatka tooltipu obejmuje warianty 5 i 6 argumentów `GetTooltip`. Nowa opcja `ShowInfusionsInTooltip` pokazuje odczytaną z oryginalnych danych infuzję bez edytowania zapisu i ustawień BE. Mechanizm wyliczania bonusów, poziomu przedmiotu i oryginalna łatka chroniąca poziom zostały zachowane.
 
 ## 0.4.10 TEST — balans Garmażerstwa i kompatybilność

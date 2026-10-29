@@ -76,6 +76,7 @@ namespace Sirroh.SkillsAddon
             }
             BlacksmithingBridge.Install(harmony);
             BlacksmithingPolish.Install(harmony);
+            MagicIconCompatibility.Install(harmony);
             Garmazerstwo.Install(harmony);
             // Isolate the experimental chest UI from all existing skills.
             try { GarmazerstwoMixUI.Install(harmony); }
