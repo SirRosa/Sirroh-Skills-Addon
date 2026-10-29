@@ -175,11 +175,11 @@ namespace Sirroh.SkillsAddon
                 float lifetime = item.m_shared.m_foodBurnTime;
                 if (lifetime <= 0f) continue;
                 float multiplier = Mathf.Pow(Mathf.Clamp01(remaining / lifetime), .3f);
-                float hp = item.m_shared.m_food * (1f + Mathf.Clamp01(data.CookPercent)) +
+                float hp = item.m_shared.m_food * (1f + Mathf.Clamp(data.CookPercent, 0f, Garmazerstwo.CookBonusCap)) +
                     Mathf.Clamp(data.Hp, 0f, Garmazerstwo.SpiceLimit(item.m_shared.m_food));
-                float stamina = item.m_shared.m_foodStamina * (1f + Mathf.Clamp01(data.CookPercent)) +
+                float stamina = item.m_shared.m_foodStamina * (1f + Mathf.Clamp(data.CookPercent, 0f, Garmazerstwo.CookBonusCap)) +
                     Mathf.Clamp(data.Stamina, 0f, Garmazerstwo.SpiceLimit(item.m_shared.m_foodStamina));
-                float eitr = item.m_shared.m_foodEitr * (1f + Mathf.Clamp01(data.CookPercent)) +
+                float eitr = item.m_shared.m_foodEitr * (1f + Mathf.Clamp(data.CookPercent, 0f, Garmazerstwo.CookBonusCap)) +
                     Mathf.Clamp(data.Eitr, 0f, Garmazerstwo.SpiceLimit(item.m_shared.m_foodEitr));
                 if (data.Buff == "max_eitr") eitr *= 1f + data.BuffValue;
                 FoodHealth.SetValue(entry, hp * multiplier);

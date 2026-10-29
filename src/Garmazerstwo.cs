@@ -15,7 +15,8 @@ namespace Sirroh.SkillsAddon
     internal static class Garmazerstwo
     {
         internal const string Key = "sirroh.skillsaddon.garmazerstwo.food.v1";
-        internal const float SpiceMaxMultiplier = 2f;
+        internal const float SpiceMaxMultiplier = .5f;
+        internal const float CookBonusCap = .5f;
         internal const string MasterSuffix = " Mistrza Kuchni";
         private const float MasterTolerance = .0001f;
         internal static Skills.SkillType SkillType;
@@ -51,8 +52,8 @@ namespace Sirroh.SkillsAddon
                 new ConfigDescription("Doświadczenie za ugotowany posiłek.", new AcceptableValueRange<float>(0f, 20f)));
             XpSpice = cfg.Bind("Garmażerstwo", "XPPerSpice", 5f,
                 new ConfigDescription("Doświadczenie za jedno udane przyprawienie.", new AcceptableValueRange<float>(0f, 100f)));
-            CookMax = cfg.Bind("Garmażerstwo", "FoodBonusAt100_v2", 100f,
-                new ConfigDescription("Procentowy bonus gotowania na poziomie 100. Nowy klucz zapewnia +100% również w już istniejących konfiguracjach.", new AcceptableValueRange<float>(0f, 100f)));
+            CookMax = cfg.Bind("Garmażerstwo", "FoodBonusAt100_v2", 50f,
+                new ConfigDescription("Procentowy bonus gotowania na poziomie 100. Istniejący klucz konfiguracji jest zachowany, lecz premia jest ograniczona do +50%.", new AcceptableValueRange<float>(0f, 50f)));
             StreakMax = cfg.Bind("Garmażerstwo", "StreakFoodBonusAt100", 10f,
                 new ConfigDescription("Maksymalna dodatkowa premia z serii gotowania na poziomie 100.", new AcceptableValueRange<float>(0f, 30f)));
         }
@@ -126,7 +127,7 @@ namespace Sirroh.SkillsAddon
                     !int.TryParse(parts[1], NumberStyles.Integer, C, out int level)) return null;
                 var data = new Food {
                     Level = Mathf.Clamp(level, 0, 100),
-                    CookPercent = Mathf.Clamp(ReadFloat(parts[2]), 0f, 1f),
+                    CookPercent = Mathf.Clamp(ReadFloat(parts[2]), 0f, CookBonusCap),
                     Buff = Uri.UnescapeDataString(parts[3]),
                     BuffValue = Mathf.Clamp(ReadFloat(parts[4]), 0f, 1f)
                 };
@@ -285,10 +286,10 @@ namespace Sirroh.SkillsAddon
         {
             level = Mathf.Clamp(level, 0f, 100f);
             float streak = Mathf.Clamp01((EffectiveCookingStreak() - 1f) / 10f);
-            return Mathf.Clamp01(level / 100f * (CookMax.Value + StreakMax.Value * streak) / 100f);
+            return Mathf.Clamp(level / 100f * (Mathf.Min(50f, CookMax.Value) + StreakMax.Value * streak) / 100f, 0f, CookBonusCap);
         }
 
-        // +100% cooking and +200% seasoning are separate: max total +300%.
+        // +50% cooking and +50% seasoning are separate: max total +100%.
         internal static float SpiceLimit(float vanilla) =>
             Mathf.Max(0f, vanilla) * SpiceMaxMultiplier;
 
@@ -338,7 +339,7 @@ namespace Sirroh.SkillsAddon
         {
             var d = item.m_shared;
             var record = Read(item);
-            float multiplier = 1f + Mathf.Clamp01(record?.CookPercent ?? 0f);
+            float multiplier = 1f + Mathf.Clamp(record?.CookPercent ?? 0f, 0f, CookBonusCap);
             hp = d.m_food * multiplier +
                 Mathf.Clamp(record?.Hp ?? 0f, 0f, SpiceLimit(d.m_food));
             stamina = d.m_foodStamina * multiplier +

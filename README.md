@@ -1,3 +1,8 @@
+## 0.4.10 TEST — balans Garmażerstwa i kompatybilność
+
+- Gotowanie: maksymalnie +50% do bazowego HP, staminy i Eitr, niezależnie od serii i starszych zapisów. Zachowany klucz FoodBonusAt100_v2 z limitem 50.
+- Przyprawianie: maksymalnie +50% bazowych statystyk, bez ograniczania liczby prób. Stare v1/v2/v3 są czytane z nowymi limitami bez zmiany danych przy odczycie. Nie zmieniono transakcji mieszania, reguł stacków ani sekundarnych efektów regeneracji.
+
 # Sirroh Skills [Addon]
 
 ## 0.4.9 TEST — Mistrza Kuchni i limit +200% przyprawiania

@@ -20,7 +20,7 @@ namespace Sirroh.SkillsAddon
     {
         internal const string Guid = "sirroh.skills.addon";
         internal const string OverhaulGuid = "sirro.valheim.pracafizyczna";
-        internal const string Version = "0.4.9";
+        internal const string Version = "0.4.10";
         internal static Plugin Instance;
         internal static Skills.SkillType SlayerType;
         internal static Skills.SkillType BrawlerType;
@@ -61,7 +61,7 @@ namespace Sirroh.SkillsAddon
             {
                 Identifier = Guid + ".garmazerstwo",
                 Name = "Garmażerstwo",
-                Description = "Wzmacnianie posiłków i przyprawianie bez limitu",
+                Description = "Gotowanie +50%, przyprawianie +50%, zachowane mieszanie",
                 Icon = SuppliedSkillIcons.Garmazerstwo(),
                 IncreaseStep = 1f
             });

@@ -79,7 +79,7 @@ namespace Sirroh.SkillsAddon
             // No modal and, importantly, no ingredient loss for mastered food.
             if (Garmazerstwo.IsMaster(dst))
             {
-                Notify("Mistrza Kuchni: ten posiłek osiągnął limit +200% przyprawiania.");
+                Notify("Mistrza Kuchni: ten posiłek osiągnął limit +50% przyprawiania.");
                 return false;
             }
 
