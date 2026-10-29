@@ -1,3 +1,5 @@
+**Blacksmithing Expanded — 0.4.10:** Łatka tooltipu obejmuje warianty 5 i 6 argumentów `GetTooltip`. Nowa opcja `ShowInfusionsInTooltip` pokazuje odczytaną z oryginalnych danych infuzję bez edytowania zapisu i ustawień BE. Mechanizm wyliczania bonusów, poziomu przedmiotu i oryginalna łatka chroniąca poziom zostały zachowane.
+
 ## 0.4.10 TEST — balans Garmażerstwa i kompatybilność
 
 - Gotowanie: maksymalnie +50% do bazowego HP, staminy i Eitr, niezależnie od serii i starszych zapisów. Zachowany klucz FoodBonusAt100_v2 z limitem 50.

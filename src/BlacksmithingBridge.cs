@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using BepInEx.Bootstrap;
 using BepInEx.Configuration;
@@ -28,6 +29,8 @@ namespace Sirroh.SkillsAddon
         private static MethodInfo applyBonuses;
         private static MethodInfo eligibility;
         private static MethodInfo allowed;
+        private static MethodInfo infoAccessor, nativeGet;
+        private static FieldInfo infusionField;
         private static bool warned;
         private static readonly Dictionary<int, bool> eligibilityCache = new Dictionary<int, bool>();
 
@@ -53,6 +56,8 @@ namespace Sirroh.SkillsAddon
                 applyBonuses = AccessTools.Method(main, "ApplyCraftingBonuses", new[] { typeof(ItemDrop.ItemData), typeof(int) });
                 eligibility = AccessTools.Method(nested, "IsEligibleForBlacksmithingBonuses", new[] { typeof(ItemDrop.ItemData) });
                 allowed = AccessTools.Method(nested, "IsItemAllowed", new[] { typeof(ItemDrop.ItemData) });
+                infusionField = AccessTools.Field(itemDataType, "infusion");
+                BindNativeDataReader(asm);
                 if (eligibility == null || allowed == null)
                     Plugin.Instance.Warning("Blacksmithing: API dopuszczalności zmienione; pozostawiam mod samodzielny.");
             }
@@ -61,6 +66,38 @@ namespace Sirroh.SkillsAddon
                 Plugin.Instance.Warning("Blacksmithing bridge (soft-disable): " + e.GetType().Name);
                 eligibility = null;
                 allowed = null;
+            }
+        }
+
+        // Resolve the ItemDataManager read-only API. No GetOrCreate, Save, or Load calls.
+        private static void BindNativeDataReader(Assembly source)
+        {
+            try
+            {
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(a =>
+                    a == source || a.GetName().Name.IndexOf("ItemDataManager", StringComparison.OrdinalIgnoreCase) >= 0);
+                var extensions = assemblies.SelectMany(a => a.GetTypes())
+                    .Where(t => t.Namespace != null && t.Namespace.StartsWith("ItemDataManager", StringComparison.Ordinal))
+                    .SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+                    .ToArray();
+                infoAccessor = extensions.FirstOrDefault(m => m.Name == "Data" && !m.IsGenericMethod &&
+                    m.GetParameters().Length == 1 &&
+                    m.GetParameters()[0].ParameterType == typeof(ItemDrop.ItemData));
+                if (infoAccessor == null) return;
+                Type infoType = infoAccessor.ReturnType;
+                nativeGet = infoType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    .FirstOrDefault(m => m.Name == "Get" && m.IsGenericMethodDefinition &&
+                        m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 0);
+                if (nativeGet == null)
+                    nativeGet = extensions.FirstOrDefault(m => m.Name == "Get" && m.IsGenericMethodDefinition &&
+                        m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1 &&
+                        m.GetParameters()[0].ParameterType == infoType);
+                nativeGet = nativeGet?.MakeGenericMethod(itemDataType);
+            }
+            catch (Exception e)
+            {
+                infoAccessor = nativeGet = null;
+                Plugin.Instance.Warning("Blacksmithing read-only ItemData API unavailable: " + e.GetType().Name);
             }
         }
 
@@ -137,6 +174,39 @@ namespace Sirroh.SkillsAddon
             }
         }
 
+        // Reads the original BE item data, including after cloning m_shared.
+        // This is presentation only and cannot re-roll, delete or apply an infusion.
+        internal static string ReadInfusion(ItemDrop.ItemData item)
+        {
+            if (!detected || item?.m_shared == null || infusionField == null) return null;
+            try
+            {
+                object state = null;
+                if (infoAccessor != null && nativeGet != null)
+                {
+                    object info = infoAccessor.Invoke(null, new object[] { item });
+                    if (info != null)
+                        state = nativeGet.IsStatic ? nativeGet.Invoke(null, new[] { info }) :
+                            nativeGet.Invoke(info, Array.Empty<object>());
+                }
+                // Older BE variants index by SharedData; use only as a last resort.
+                if (state == null && activeItemsField?.GetValue(null) is System.Collections.IDictionary registry &&
+                    registry.Contains(item.m_shared))
+                    state = registry[item.m_shared];
+                return state != null && itemDataType.IsInstanceOfType(state) ?
+                    infusionField.GetValue(state) as string : null;
+            }
+            catch (Exception e)
+            {
+                if (!warned)
+                {
+                    warned = true;
+                    Plugin.Instance.Warning("Blacksmithing infusion tooltip read failed: " + e.GetType().Name);
+                }
+                return null;
+            }
+        }
+
         internal static void Report()
         {
             if (!detected)
@@ -160,6 +230,8 @@ namespace Sirroh.SkillsAddon
             activeItemsField = null;
             savedLevelField = null;
             lastQualityField = null;
+            infoAccessor = nativeGet = null;
+            infusionField = null;
         }
     }
 }

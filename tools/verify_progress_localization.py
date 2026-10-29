@@ -34,6 +34,9 @@ assert "BlacksmithingPolish.Tick()" in plugin
 assert "RefreshConfigurationManager()" in translation
 assert "OriginalDescriptions" in translation
 assert "Forged at Blacksmithing" in translation and "Elemental Infusion:" in translation
+assert "ShowInfusionsInTooltip" in translation
+assert "BlacksmithingBridge.ReadInfusion(__0)" in translation
+assert "prefix.Concat(new[] { typeof(bool) })" in translation
 assert "Masterwork crafting created an extra item!" in translation
 assert "<Description>k__BackingField" in translation
 assert 'definition.Section + "|" + definition.Key' in translation

@@ -113,6 +113,7 @@ namespace Sirroh.SkillsAddon
 
         private static bool warned;
         private static bool tooltipInstalled, messageInstalled;
+        private static ConfigEntry<bool> showInfusions;
         private static bool lastPolish, skillTranslated;
         private static float nextCheck;
         private static readonly Dictionary<ConfigEntryBase, ConfigDescription> OriginalDescriptions =
@@ -127,15 +128,19 @@ namespace Sirroh.SkillsAddon
         internal static void Install(Harmony harmony)
         {
             if (harmony == null || !Available()) return;
+            showInfusions = Plugin.Instance.Config.Bind("Blacksmithing Expanded - Compat", "ShowInfusionsInTooltip", true,
+                "Pokazuj zapisane infuzje w tooltipach niezależnie od domyślnej opcji BE. Wyłącznie odczyt.");
             Apply();
             if (!tooltipInstalled)
             {
                 try
                 {
-                    var tooltip = AccessTools.Method(typeof(ItemDrop.ItemData), "GetTooltip",
-                        new[] { typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int), typeof(bool) });
-                    if (tooltip != null)
+                    // BE uses the 5-argument GetTooltip; some Valheim builds also have 6 arguments.
+                    var prefix = new[] { typeof(ItemDrop.ItemData), typeof(int), typeof(bool), typeof(float), typeof(int) };
+                    foreach (var signature in new[] { prefix, prefix.Concat(new[] { typeof(bool) }).ToArray() })
                     {
+                        var tooltip = AccessTools.Method(typeof(ItemDrop.ItemData), "GetTooltip", signature);
+                        if (tooltip == null) continue;
                         harmony.Patch(tooltip, postfix: new HarmonyMethod(
                             AccessTools.Method(typeof(BlacksmithingPolish), nameof(TranslateTooltip))) { priority = Priority.Last });
                         tooltipInstalled = true;
@@ -313,9 +318,24 @@ namespace Sirroh.SkillsAddon
             return BepInEx.Bootstrap.Chainloader.ManagerObject;
         }
 
-        private static void TranslateTooltip(ref string __result)
+        private static void TranslateTooltip(ItemDrop.ItemData __0, ref string __result)
         {
-            if (!PolishEnabled || string.IsNullOrEmpty(__result)) return;
+            if (string.IsNullOrEmpty(__result)) return;
+            bool polish = PolishEnabled;
+            // Keep native BE settings unchanged. Read stored infusion only when not already visible.
+            if (showInfusions?.Value == true && !Infused.IsMatch(__result) &&
+                __result.IndexOf("Nasycenie żywiołem:", StringComparison.Ordinal) < 0)
+            {
+                string infusion = BlacksmithingBridge.ReadInfusion(__0);
+                if (!string.IsNullOrEmpty(infusion))
+                {
+                    string element = polish && Elements.TryGetValue(infusion, out string translated)
+                        ? translated : infusion;
+                    __result += "\n<color=#87CEEB>" + (polish ? "Nasycenie żywiołem: " : "Elemental Infusion: ") +
+                        element + "</color>";
+                }
+            }
+            if (!polish) return;
             __result = Forged.Replace(__result, "Wykute na poziomie $1 Kuźnictwa");
             __result = Infused.Replace(__result, match => "Nasycenie żywiołem: " + Elements[match.Groups[1].Value]);
         }
