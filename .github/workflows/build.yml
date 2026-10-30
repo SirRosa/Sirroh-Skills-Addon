@@ -94,7 +94,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: Sirroh_Skills_Addon-v0.4.10
+          name: Sirroh_Skills_Addon-v0.4.11
           path: dist/*.zip
           if-no-files-found: error
 
@@ -115,5 +115,5 @@ jobs:
               --target "$GITHUB_SHA" \
               --prerelease \
               --title "Sirroh Skills [Addon] $tag — test build" \
-              --notes "Kolos (Slayer), Zawadiaka (one-handed), Łowca Głów (trophies plus 10/5 kill thresholds). Optional Blacksmithing Expanded compatibility. Compiled and API-checked on Valheim 1.0; in-game multiplayer tests remain necessary."
+              --notes "Broń dwuręczna (Slayer), Broń jednoręczna (one-handed), Łowca Głów (trophies plus 10/5 kill thresholds). Optional Blacksmithing Expanded compatibility. Compiled and API-checked on Valheim 1.0; in-game multiplayer tests remain necessary."
           fi

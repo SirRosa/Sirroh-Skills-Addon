@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Include="src/**/*.cs" />
     <EmbeddedResource Include="assets/skill_icons/bron_dwureczna.png" LogicalName="sirroh.icons.bron_dwureczna.png" />
+    <EmbeddedResource Include="assets/skill_icons/bron_jednoreczna.png" LogicalName="sirroh.icons.bron_jednoreczna.png" />
     <EmbeddedResource Include="assets/skill_icons/lowca_glow.png" LogicalName="sirroh.icons.lowca_glow.png" />
     <EmbeddedResource Include="assets/skill_icons/kuznictwo.png" LogicalName="sirroh.icons.kuznictwo.png" />
     <EmbeddedResource Include="assets/skill_icons/garmazerstwo.png" LogicalName="sirroh.icons.garmazerstwo.png" />

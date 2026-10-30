@@ -9,6 +9,10 @@
 
 # Sirroh Skills [Addon]
 
+## 0.4.11 TEST — nazwy i ikony broni
+
+Umiejętności **Kolos** i **Zawadiaka** wyświetlane są teraz jako **Broń dwuręczna** i **Broń jednoręczna**, z nowymi ikonami 96×96. Dotychczasowe identyfikatory `neithar.Slayer` i `sirroh.skills.addon.zawadiaka` oraz klucze konfiguracji zostały zachowane, więc nie jest wymagana migracja zapisów ani ustawień. Mechanika walki i pozostałe umiejętności pozostają bez zmian.
+
 ## 0.4.9 TEST — Mistrza Kuchni i limit +200% przyprawiania
 
 - **Premia za poziom Garmażerstwa:** na poziomie 100 dokładnie +100% podstawowych HP, staminy i Eitru (na poziomie 40 bez dodatkowej serii +40%). Zachowana premia za serię gotowania nie może przebić +100%. Nowa opcja konfiguracyjna `FoodBonusAt100_v2` zastępuje historyczną wartość 20% bez wymuszania usuwania istniejącego pliku konfiguracyjnego.

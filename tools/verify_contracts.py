@@ -11,7 +11,11 @@ assert '[BepInIncompatibility("neithar.Slayer")]' in all_code
 assert '[BepInIncompatibility("neobotics.valheim_mod.slayerskills")]' in all_code
 assert 'Identifier = "neithar.Slayer"' in all_code, 'Retain previous skill ID'
 assert 'Identifier = Guid + ".zawadiaka"' in all_code
-assert 'Name = "Kolos"' in all_code and 'Name = "Zawadiaka"' in all_code
+assert 'Name = "Broń dwuręczna"' in all_code and 'Name = "Broń jednoręczna"' in all_code
+assert 'Icon = SuppliedSkillIcons.BronDwureczna()' in all_code
+assert 'Icon = SuppliedSkillIcons.BronJednoreczna()' in all_code
+assert 'config.Bind("Kolos", "Enabled"' in src["SlayerCombat.cs"]
+assert 'config.Bind("Zawadiaka", "Enabled"' in src["SlayerCombat.cs"]
 assert 'IsBrawlerWeapon' in all_code and 'BrawlerLevel' in all_code
 assert 'else if (brawlerEnabled.Value && IsBrawlerWeapon(weapon))' in all_code
 assert 'SlayerSkills_1847__C' in all_code, 'Legacy trophy collection migration'

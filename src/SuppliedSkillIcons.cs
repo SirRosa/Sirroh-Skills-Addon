@@ -36,7 +36,8 @@ namespace Sirroh.SkillsAddon
             }
         }
 
-        internal static Sprite Kolos() => Load("sirroh.icons.bron_dwureczna.png", SkillArtwork.MakeAxe);
+        internal static Sprite BronDwureczna() => Load("sirroh.icons.bron_dwureczna.png", SkillArtwork.MakeAxe);
+        internal static Sprite BronJednoreczna() => Load("sirroh.icons.bron_jednoreczna.png", SkillArtwork.MakeDagger);
         internal static Sprite Garmazerstwo() => Load("sirroh.icons.garmazerstwo.png", SkillArtwork.MakeDagger);
         internal static Sprite Kuznictwo() => Load("sirroh.icons.kuznictwo.png", SkillArtwork.MakeAxe);
         internal static Sprite LowcaGlow() => Load("sirroh.icons.lowca_glow.png", SkillArtwork.MakeAxe);

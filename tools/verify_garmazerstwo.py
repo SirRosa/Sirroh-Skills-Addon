@@ -17,8 +17,8 @@ csproj = Path("SirrohSkillsAddon.csproj").read_text(encoding="utf-8")
 workflow = Path(".github/workflows/build.yml").read_text(encoding="utf-8")
 manifest = json.loads(Path("manifest.json").read_text(encoding="utf-8"))
 
-assert manifest["version_number"] == "0.4.10"
-assert 'internal const string Version = "0.4.10"' in plugin
+assert manifest["version_number"] == "0.4.11"
+assert 'internal const string Version = "0.4.11"' in plugin
 assert 'Identifier = Guid + ".garmazerstwo"' in plugin
 assert 'Identifier = "neithar.Slayer"' in plugin
 assert 'Identifier = Guid + ".zawadiaka"' in plugin
@@ -86,14 +86,14 @@ assert 'Skills.SkillType.Cooking' in stations
 assert 'Wykute na poziomie $1 Kuźnictwa' in polish
 assert 'Kuźnictwo' in polish
 assert "Kowalstwo" not in polish
-for icon in ["bron_dwureczna", "lowca_glow", "garmazerstwo", "kuznictwo"]:
+for icon in ["bron_dwureczna", "bron_jednoreczna", "lowca_glow", "garmazerstwo", "kuznictwo"]:
     file = Path("assets/skill_icons") / f"{icon}.png"
     assert file.is_file() and file.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n", icon
     assert f'LogicalName="sirroh.icons.{icon}.png"' in csproj
     assert f'sirroh.icons.{icon}.png' in icons
 assert "branches: [main, 'test/**']" in workflow
 assert "if: github.ref == 'refs/heads/main'" in workflow
-print("PASS: 0.4.10 unlimited v3, v1/v2 migration, capped HP regen and automatic split.")
+print("PASS: 0.4.11 unlimited v3, v1/v2 migration, capped HP regen and automatic split.")
 
 # Packaging identity must not break existing Thunderstore updates.
 import struct

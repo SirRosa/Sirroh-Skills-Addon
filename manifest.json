@@ -1,8 +1,8 @@
 {
   "name": "Sirroh_Skills_Addon",
-  "version_number": "0.4.10",
+  "version_number": "0.4.11",
   "website_url": "https://github.com/SirRosa/Sirroh-Skills-Addon",
-  "description": "Sirroh Skills [Addon] — Kolos, Zawadiaka, Łowca Głów, Kuźnictwo PL oraz Garmażerstwo: gotowanie, losowe premie i przyprawianie.",
+  "description": "Sirroh Skills [Addon] — Broń dwuręczna, Broń jednoręczna, Łowca Głów, Kuźnictwo PL oraz Garmażerstwo: gotowanie, losowe premie i przyprawianie.",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2351",
     "ValheimModding-Jotunn-2.30.2"

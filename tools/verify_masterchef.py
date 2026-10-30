@@ -9,7 +9,7 @@ zen=Path("src/ZenUiCompatibility.cs").read_text("utf8")
 mix=Path("src/GarmazerstwoMixing.cs").read_text("utf8")
 spice=Path("src/GarmazerstwoSpicing.cs").read_text("utf8")
 manifest=json.loads(Path("manifest.json").read_text("utf8"))
-assert manifest["version_number"] == "0.4.10"
+assert manifest["version_number"] == "0.4.11"
 assert "FoodBonusAt100_v2" in food
 assert 'CookMax = cfg.Bind("Garmażerstwo", "FoodBonusAt100_v2", 50f' in food
 assert 'return Mathf.Clamp(level / 100f' in food

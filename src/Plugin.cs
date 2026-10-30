@@ -20,7 +20,7 @@ namespace Sirroh.SkillsAddon
     {
         internal const string Guid = "sirroh.skills.addon";
         internal const string OverhaulGuid = "sirro.valheim.pracafizyczna";
-        internal const string Version = "0.4.10";
+        internal const string Version = "0.4.11";
         internal static Plugin Instance;
         internal static Skills.SkillType SlayerType;
         internal static Skills.SkillType BrawlerType;
@@ -44,17 +44,17 @@ namespace Sirroh.SkillsAddon
             {
                 // Reuse the original ID: existing Slayer level survives the migration.
                 Identifier = "neithar.Slayer",
-                Name = "Kolos",
+                Name = "Broń dwuręczna",
                 Description = "Siła broni dwuręcznych, ogłuszenie i odporność na odrzut",
-                Icon = SuppliedSkillIcons.Kolos(),
+                Icon = SuppliedSkillIcons.BronDwureczna(),
                 IncreaseStep = 1f
             });
             BrawlerType = SkillManager.Instance.AddSkill(new SkillConfig
             {
                 Identifier = Guid + ".zawadiaka",
-                Name = "Zawadiaka",
+                Name = "Broń jednoręczna",
                 Description = "Bronie jednoręczne, większe obrażenia, ogłuszenie i odporność na odrzut",
-                Icon = SkillArtwork.MakeDagger(),
+                Icon = SuppliedSkillIcons.BronJednoreczna(),
                 IncreaseStep = 1f
             });
             GarmazerstwoType = SkillManager.Instance.AddSkill(new SkillConfig
@@ -82,7 +82,7 @@ namespace Sirroh.SkillsAddon
             try { GarmazerstwoMixUI.Install(harmony); }
             catch (Exception e) { Warning("Mieszaj UI unavailable: " + e.Message); }
             BlacksmithingBridge.Report();
-            LogInfo("Kolos, Zawadiaka, Łowca Głów and Garmażerstwo ready; XP stays in Sirroh Overhaul skill pipeline.");
+            LogInfo("Broń dwuręczna, Broń jednoręczna, Łowca Głów and Garmażerstwo ready; XP stays in Sirroh Overhaul skill pipeline.");
         }
 
         private void Start()
